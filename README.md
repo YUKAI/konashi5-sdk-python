@@ -3,19 +3,19 @@ Repository for Konashi Python SDK.
 
 ## Requirements
 
-- bleak (https://github.com/hbldh/bleak)
+- bleak (https://github.com/hbldh/bleak):
 `pip3 install bleak`
 
 
 ## Files
 
-- Konashi.py
+- Konashi.py:
 Interface to Konashi device.
 
-- all.py, analog_out.py, gpio.py, i2c.py, pwm.py, spi.py, uart.py
+- all.py, analog_out.py, gpio.py, i2c.py, pwm.py, spi.py, uart.py:
 Test scripts using bluetooth directly (not SDK).
 
-- uart_local.py
+- uart_local.py:
 Script for UART communication on PC.
 
 
