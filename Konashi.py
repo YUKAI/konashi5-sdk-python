@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 import struct
 from ctypes import *
 from typing import *
+from enum import *
 
 from bleak import *
 
@@ -64,6 +64,12 @@ KONASHI_GPIO_WIRED_FCT_AND = 1
 KONASHI_GPIO_WIRED_FCT_OR = 2
 KONASHI_GPIO_DIRECTION_IN = 0
 KONASHI_GPIO_DIRECTION_OUT = 1
+KONASHI_GPIO_FUNCTION_DISABLED = 0
+KONASHI_GPIO_FUNCTION_GPIO = 1
+KONASHI_GPIO_FUNCTION_PWM = 2
+KONASHI_GPIO_FUNCTION_I2C = 3
+KONASHI_GPIO_FUNCTION_SPI = 4
+KONASHI_GPIO_FUNCTION_STR = ["DISABLED", "GPIO", "PWM", "I2C", "SPI"]
 class KonashiGpioPinConfig(LittleEndianStructure):
     _pack_ = 1
     _fields_ = [
@@ -89,6 +95,23 @@ class KonashiGpioPinConfig(LittleEndianStructure):
         self.pull_down = pull_down
         self.pull_up = pull_up
         self.wired_fct = wired_fct
+    def __str__(self):
+        s = "KonashiGpioPinConfig("
+        try:
+            s += KONASHI_GPIO_FUNCTION_STR[self.function]
+            if self.function == KONASHI_GPIO_FUNCTION_GPIO:
+                s += ", "
+                s += "WOR" if self.wired_fct==KONASHI_GPIO_WIRED_FCT_OR else "WAND" if self.wired_fct==KONASHI_GPIO_WIRED_FCT_AND else "OUT" if self.direction==KONASHI_GPIO_DIRECTION_OUT else "IN"
+                if self.pull_down:
+                    s += ", PDOWN"
+                if self.pull_up:
+                    s += ", PUP"
+                if self.send_on_change:
+                    s += ", NTFY"
+        except:
+            s += "Unknown"
+        s += ")"
+        return s
 _KonashiGpioPinsConfig = KonashiGpioPinConfig*KONASHI_GPIO_COUNT
 
 class KonashiSoftPwmPinConfig(LittleEndianStructure):
@@ -168,10 +191,7 @@ class KonashiSpiConfig(LittleEndianStructure):
     ]
 
 
-KONASHI_GPIO_LEVEL_LOW = 0
-KONASHI_GPIO_LEVEL_HIGH = 1
-KONASHI_GPIO_LEVEL_TOGGLE = 2
-class KonashiGpioPinControl(LittleEndianStructure):
+class _KonashiGpioPinIO(LittleEndianStructure):
     _pack_ = 1
     _fields_ = [
         ('level', c_uint8, 1),
@@ -179,7 +199,17 @@ class KonashiGpioPinControl(LittleEndianStructure):
         ('valid', c_uint8, 1),
         ('', c_uint8, 3)
     ]
-_KonashiGpioPinsControl = KonashiGpioPinControl*KONASHI_GPIO_COUNT
+_KonashiGpioPinsIO = _KonashiGpioPinIO*KONASHI_GPIO_COUNT
+
+class KonashiGpioPinControl(Enum):
+    LOW = 0
+    HIGH = 1
+    TOGGLE = 2
+
+class KonashiGpioPinLevel(Enum):
+    LOW = 0
+    HIGH = 1
+    INVALID = 2
 
 
 class NotFoundError(Exception):
@@ -195,8 +225,8 @@ class Konashi:
         self._ble_dev = None
         self._ble_client = None
         self._gpio_config = _KonashiGpioPinsConfig()
-        self._gpio_output = _KonashiGpioPinsControl()
-        self._gpio_input = _KonashiGpioPinsControl()
+        self._gpio_output = _KonashiGpioPinsIO()
+        self._gpio_input = _KonashiGpioPinsIO()
         self._gpio_input_cb = None
         self._builtin_temperature_cb = None
         self._builtin_humidity_cb = None
@@ -310,11 +340,11 @@ class Konashi:
             await self._ble_client.start_notify(KONASHI_UUID_UART_CONFIG_GET, self._ntf_cb_uart_config_get)
             await self._ble_client.start_notify(KONASHI_UUID_SPI_CONFIG_GET, self._ntf_cb_spi_config_get)
 
-            buf = await self._ble_client.read_gatt_char(KONASHI_UUID_GPIO_CONFIG_GET)
-            self._gpio_output = _KonashiGpioPinsControl.from_buffer_copy(buf)
+            buf = await self._ble_client.read_gatt_char(KONASHI_UUID_GPIO_OUTPUT_GET)
+            self._gpio_output = _KonashiGpioPinsIO.from_buffer_copy(buf)
             await self._ble_client.start_notify(KONASHI_UUID_GPIO_OUTPUT_GET, self._ntf_cb_gpio_output_get)
-            buf = await self._ble_client.read_gatt_char(KONASHI_UUID_GPIO_CONFIG_GET)
-            self._gpio_input = _KonashiGpioPinsControl.from_buffer_copy(buf)
+            buf = await self._ble_client.read_gatt_char(KONASHI_UUID_GPIO_INPUT)
+            self._gpio_input = _KonashiGpioPinsIO.from_buffer_copy(buf)
             await self._ble_client.start_notify(KONASHI_UUID_GPIO_INPUT, self._ntf_cb_gpio_input)
             await self._ble_client.start_notify(KONASHI_UUID_SOFTPWM_OUTPUT_GET, self._ntf_cb_softpwm_output_get)
             await self._ble_client.start_notify(KONASHI_UUID_HARDPWM_OUTPUT_GET, self._ntf_cb_hardpwm_output_get)
@@ -356,7 +386,7 @@ class Konashi:
         pass
 
     def _ntf_cb_gpio_output_get(self, sender, data):
-        self._gpio_output = _KonashiGpioPinsControl.from_buffer_copy(data)
+        self._gpio_output = _KonashiGpioPinsIO.from_buffer_copy(data)
     def _ntf_cb_gpio_input(self, sender, data):
         for i in range(KONASHI_GPIO_COUNT):
             if data[i]&0x10:
@@ -364,7 +394,7 @@ class Konashi:
                 if self._gpio_input[i].level != val:
                     if self._gpio_input_cb is not None:
                         self._gpio_input_cb(i, val)
-        self._gpio_input = _KonashiGpioPinsControl.from_buffer_copy(data)
+        self._gpio_input = _KonashiGpioPinsIO.from_buffer_copy(data)
     def _ntf_cb_softpwm_output_get(self, sender, data):
         pass
     def _ntf_cb_hardpwm_output_get(self, sender, data):
@@ -437,6 +467,23 @@ class Konashi:
                     b.extend(bytearray([(i<<4)|(0x1 if config[1] else 0x0), bytes(config[2])[1]]))
         await self._ble_client.write_gatt_char(KONASHI_UUID_CONFIG_CMD, b)
 
+    async def gpioConfigGet(self, pin_bitmask: int) -> List[KonashiGpioPinConfig]:
+        """
+        Get a list of current GPIO configurations for the pins specified in the bitmask.
+        """
+        l = []
+        buf = await self._ble_client.read_gatt_char(KONASHI_UUID_GPIO_CONFIG_GET)
+        self._gpio_config = _KonashiGpioPinsConfig.from_buffer_copy(buf)
+        for i in range(KONASHI_GPIO_COUNT):
+            if (pin_bitmask&(1<<i)) > 0:
+                l.append(self._gpio_config[i])
+        return l
+    async def gpioConfigGetAll(self) -> List[KonashiGpioPinConfig]:
+        """
+        Get a list of current GPIO configurations for all pins.
+        """
+        return await self.gpioConfigGet(0xFF)
+
     def gpioSetInputCallback(self, notify_callback: Callable[[int, int], None]) -> None:
         """
         The callback is called with parameters:
@@ -445,11 +492,11 @@ class Konashi:
         """
         self._gpio_input_cb = notify_callback
 
-    async def gpioControl(self, controls: Sequence(Tuple[int, int])) -> None:
+    async def gpioOutputSet(self, controls: Sequence(Tuple[int, KonashiGpioPinControl])) -> None:
         """
-        Specify a list of controls in the format (pin, level) with:
+        Specify a list of controls in the format (pin, control) with:
           pin (int): a bitmask of the pins to apply this control to
-          level (int): the control for the specified pins
+          control (KonashiGpioPinControl): the control for the specified pins
         """
         b = bytearray([KONASHI_CTL_CMD_GPIO])
         for control in controls:
@@ -458,6 +505,45 @@ class Konashi:
                     b.extend(bytearray([(i<<4)|(control[1])]))
         await self._ble_client.write_gatt_char(KONASHI_UUID_CONTROL_CMD, b)
 
+    async def gpioOutputGet(self, pin_bitmask: int) -> List[KonashiGpioPinLevel]:
+        """
+        Get a list of current GPIO output levels for the pins specified in the bitmask.
+        """
+        l = []
+        buf = await self._ble_client.read_gatt_char(KONASHI_UUID_GPIO_OUTPUT_GET)
+        self._gpio_output = _KonashiGpioPinsIO.from_buffer_copy(buf)
+        for i in range(KONASHI_GPIO_COUNT):
+            if (pin_bitmask&(1<<i)) > 0:
+                if not self._gpio_output[i].valid:
+                    l.append(KonashiGpioPinLevel.INVALID)
+                else:
+                    l.append(KonashiGpioPinLevel(self._gpio_output[i].level))
+        return l
+    async def gpioOutputGetAll(self) -> List[KonashiGpioPinLevel]:
+        """
+        Get a list of current GPIO output levels for all pins.
+        """
+        return await self.gpioOutputGet(0xFF)
+
+    async def gpioInputGet(self, pin_bitmask: int) -> List[KonashiGpioPinLevel]:
+        """
+        Get a list of current GPIO input levels for the pins specified in the bitmask.
+        """
+        l = []
+        buf = await self._ble_client.read_gatt_char(KONASHI_UUID_GPIO_INPUT)
+        self._gpio_input = _KonashiGpioPinsIO.from_buffer_copy(buf)
+        for i in range(KONASHI_GPIO_COUNT):
+            if (pin_bitmask&(1<<i)) > 0:
+                if not self._gpio_input[i].valid:
+                    l.append(KonashiGpioPinLevel.INVALID)
+                else:
+                    l.append(KonashiGpioPinLevel(self._gpio_input[i].level))
+        return l
+    async def gpioInputGetAll(self) -> List[KonashiGpioPinLevel]:
+        """
+        Get a list of current GPIO input levels for all pins.
+        """
+        return await self.gpioInputGet(0xFF)
 
     async def builtinSetTemperatureCallback(self, notify_callback: Callable[[float], None]) -> None:
         """
@@ -534,45 +620,3 @@ class Konashi:
         if transition_end_cb is not None:
             self._builtin_rgb_transition_end_cb = transition_end_cb
 
-
-if __name__ == "__main__":
-    async def main():
-        k = Konashi(name="ksAB0FE8")
-        await k.connect(5)
-        print("Connected")
-        await asyncio.sleep(0.5)
-        def pin_change_cb(pin, val):
-            print("Pin {}: {}".format(pin, val))
-        def temperature_cb(temp):
-            print("Temperature:", temp)
-        def humidity_cb(hum):
-            print("Humidity:", hum)
-        def pressure_cb(press):
-            print("Pressure:", press)
-        def presence_cb(pres):
-            print("Presence:", pres)
-        def accelgyro_cb(accel, gyro):
-            print("Accel:", accel)
-            print("Gyro:", gyro)
-        k.gpioSetInputCallback(pin_change_cb)
-        await k.gpioConfigSet([(0x01,True,KonashiGpioPinConfig(KONASHI_GPIO_DIRECTION_IN,send_on_change=True)), (0x1E,True,KonashiGpioPinConfig(KONASHI_GPIO_DIRECTION_OUT,send_on_change=False))])
-        await k.builtinSetTemperatureCallback(temperature_cb)
-        await k.builtinSetHumidityCallback(humidity_cb)
-        await k.builtinSetPressureCallback(pressure_cb)
-        await k.builtinSetPresenceCallback(presence_cb)
-        await k.builtinSetAccelGyroCallback(accelgyro_cb)
-        await asyncio.sleep(1)
-        await k.gpioControl([(0x14,KONASHI_GPIO_LEVEL_LOW), (0x0A,KONASHI_GPIO_LEVEL_HIGH)])
-        for i in range(40):
-            await asyncio.sleep(1)
-            await k.gpioControl([(0x1E,KONASHI_GPIO_LEVEL_TOGGLE)])
-            await k.builtinSetRgb(255 if i%3==0 else 0, 255 if i%3==1 else 0, 255 if i%3==2 else 0, 255, 1000)
-        await asyncio.sleep(2)
-        await k.disconnect()
-        print("Disconnected")
-        await asyncio.sleep(2)
-
-    logging.basicConfig(level=logging.INFO)
-
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
