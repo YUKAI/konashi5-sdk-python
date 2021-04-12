@@ -59,17 +59,26 @@ KONASHI_UUID_BUILTIN_RGB_GET = "064d0403-8251-49d9-b6f3-f7ba35e5d0a1"
 
 
 KONASHI_GPIO_COUNT = 8
-KONASHI_GPIO_WIRED_FCT_NOT_USED = 0
-KONASHI_GPIO_WIRED_FCT_AND = 1
-KONASHI_GPIO_WIRED_FCT_OR = 2
-KONASHI_GPIO_DIRECTION_IN = 0
-KONASHI_GPIO_DIRECTION_OUT = 1
-KONASHI_GPIO_FUNCTION_DISABLED = 0
-KONASHI_GPIO_FUNCTION_GPIO = 1
-KONASHI_GPIO_FUNCTION_PWM = 2
-KONASHI_GPIO_FUNCTION_I2C = 3
-KONASHI_GPIO_FUNCTION_SPI = 4
 KONASHI_GPIO_FUNCTION_STR = ["DISABLED", "GPIO", "PWM", "I2C", "SPI"]
+class KonashiGpioPinFunction(Enum):
+    DISABLED = 0
+    GPIO = 1
+    PWM = 2
+    I2C = 3
+    SPI = 4
+    def __int__(self):
+        return self.value
+class KonashiGpioPinDirection(Enum):
+    INPUT = 0
+    OUTPUT = 1
+    def __int__(self):
+        return self.value
+class KonashiGpioPinWiredFunction(Enum):
+    DISABLED = 0
+    OPEN_DRAIN = 1
+    OPEN_SOURCE = 2
+    def __int__(self):
+        return self.value
 class KonashiGpioPinConfig(LittleEndianStructure):
     _pack_ = 1
     _fields_ = [
@@ -82,13 +91,13 @@ class KonashiGpioPinConfig(LittleEndianStructure):
         ('send_on_change', c_uint8, 1),
         ('', c_uint8, 2)
     ]
-    def __init__(self, direction: int=KONASHI_GPIO_DIRECTION_IN, send_on_change: bool=True, pull_down: bool=False, pull_up: bool=False, wired_fct: int=KONASHI_GPIO_WIRED_FCT_NOT_USED):
+    def __init__(self, direction: KonashiGpioPinDirection=KonashiGpioPinDirection.INPUT, send_on_change: bool=True, pull_down: bool=False, pull_up: bool=False, wired_fct: KonashiGpioPinWiredFunction=KonashiGpioPinWiredFunction.DISABLED):
         """
-        direction (int): the pin direction, one of KONASHI_GPIO_DIRECTION_IN or KONASHI_GPIO_DIRECTION_OUT
+        direction (KonashiGpioPinDirection): the pin direction
         send_on_change (bool): if true, a notification is sent on pin level change
         pull_down (bool): if true, activate the pull down resistor
         pull_up (bool): if true, activate the pull up resistor
-        wired_function (int): use the pin in a wired function mode, one of KONASHI_GPIO_WIRED_FCT_NOT_USED, KONASHI_GPIO_WIRED_FCT_AND or KONASHI_GPIO_WIRED_FCT_OR
+        wired_function (KonashiGpioPinWiredFunction): use the pin in a wired function mode
         """
         self.direction = direction
         self.send_on_change = send_on_change
@@ -101,7 +110,7 @@ class KonashiGpioPinConfig(LittleEndianStructure):
             s += KONASHI_GPIO_FUNCTION_STR[self.function]
             if self.function == KONASHI_GPIO_FUNCTION_GPIO:
                 s += ", "
-                s += "WOR" if self.wired_fct==KONASHI_GPIO_WIRED_FCT_OR else "WAND" if self.wired_fct==KONASHI_GPIO_WIRED_FCT_AND else "OUT" if self.direction==KONASHI_GPIO_DIRECTION_OUT else "IN"
+                s += "OD" if self.wired_fct==KonashiGpioPinWiredFunction.OPEN_DRAIN else "OS" if self.wired_fct==KonashiGpioPinWiredFunction.OPEN_SOURCE else "OUT" if self.direction==KonashiGpioPinDirection.OUTPUT else "IN"
                 if self.pull_down:
                     s += ", PDOWN"
                 if self.pull_up:
@@ -191,6 +200,18 @@ class KonashiSpiConfig(LittleEndianStructure):
     ]
 
 
+class KonashiGpioPinControl(Enum):
+    LOW = 0
+    HIGH = 1
+    TOGGLE = 2
+    def __int__(self):
+        return self.value
+class KonashiGpioPinLevel(Enum):
+    LOW = 0
+    HIGH = 1
+    INVALID = 2
+    def __int__(self):
+        return self.value
 class _KonashiGpioPinIO(LittleEndianStructure):
     _pack_ = 1
     _fields_ = [
@@ -201,21 +222,20 @@ class _KonashiGpioPinIO(LittleEndianStructure):
     ]
 _KonashiGpioPinsIO = _KonashiGpioPinIO*KONASHI_GPIO_COUNT
 
-class KonashiGpioPinControl(Enum):
-    LOW = 0
-    HIGH = 1
-    TOGGLE = 2
 
-class KonashiGpioPinLevel(Enum):
-    LOW = 0
-    HIGH = 1
-    INVALID = 2
-
+class KonashiError(Exception):
+    pass
 
 class NotFoundError(Exception):
     pass
 
 class InvalidDeviceError(Exception):
+    pass
+
+class PinInvalidError(Exception):
+    pass
+
+class PinUnavailableError(Exception):
     pass
 
 
@@ -328,7 +348,11 @@ class Konashi:
                 raise
         if self._ble_client is None:
             self._ble_client = BleakClient(self._ble_dev.address)
-        _con = await self._ble_client.connect(timeout=timeout)
+        try:
+            _con = await self._ble_client.connect(timeout=timeout)
+        except BleakError as e:
+            self._ble_client = None
+            raise KonashiError(f'Error occured during BLE connect: "{str(e)}"')
         if _con:
             buf = await self._ble_client.read_gatt_char(KONASHI_UUID_GPIO_CONFIG_GET)
             self._gpio_config = _KonashiGpioPinsConfig.from_buffer_copy(buf)
@@ -464,15 +488,23 @@ class Konashi:
         for config in configs:
             for i in range(KONASHI_GPIO_COUNT):
                 if (config[0]&(1<<i)) > 0:
+                    if KonashiGpioPinFunction(self._gpio_config[i].function) != KonashiGpioPinFunction.DISABLED and KonashiGpioPinFunction(self._gpio_config[i].function) != KonashiGpioPinFunction.GPIO:
+                        raise PinUnavailableError(f'GPIO{i} is already configured as {KONASHI_GPIO_FUNCTION_STR[self._gpio_config[i].function]}')
                     b.extend(bytearray([(i<<4)|(0x1 if config[1] else 0x0), bytes(config[2])[1]]))
-        await self._ble_client.write_gatt_char(KONASHI_UUID_CONFIG_CMD, b)
+        try:
+            await self._ble_client.write_gatt_char(KONASHI_UUID_CONFIG_CMD, b)
+        except BleakError as e:
+            raise KonashiError(f'Error occured during BLE write: "{str(e)}"')
 
     async def gpioConfigGet(self, pin_bitmask: int) -> List[KonashiGpioPinConfig]:
         """
         Get a list of current GPIO configurations for the pins specified in the bitmask.
         """
         l = []
-        buf = await self._ble_client.read_gatt_char(KONASHI_UUID_GPIO_CONFIG_GET)
+        try:
+            buf = await self._ble_client.read_gatt_char(KONASHI_UUID_GPIO_CONFIG_GET)
+        except BleakError as e:
+            raise KonashiError(f'Error occured during BLE read: "{str(e)}"')
         self._gpio_config = _KonashiGpioPinsConfig.from_buffer_copy(buf)
         for i in range(KONASHI_GPIO_COUNT):
             if (pin_bitmask&(1<<i)) > 0:
@@ -502,15 +534,23 @@ class Konashi:
         for control in controls:
             for i in range(KONASHI_GPIO_COUNT):
                 if (control[0]&(1<<i)) > 0:
+                    if KonashiGpioPinFunction(self._gpio_config[i].function) != KonashiGpioPinFunction.GPIO:
+                        raise PinUnavailableError(f'GPIO{i} is not configured as GPIO (configured as {KONASHI_GPIO_FUNCTION_STR[self._gpio_config[i].function]})')
                     b.extend(bytearray([(i<<4)|(control[1])]))
-        await self._ble_client.write_gatt_char(KONASHI_UUID_CONTROL_CMD, b)
+        try:
+            await self._ble_client.write_gatt_char(KONASHI_UUID_CONTROL_CMD, b)
+        except BleakError as e:
+            raise KonashiError(f'Error occured during BLE write: "{str(e)}"')
 
     async def gpioOutputGet(self, pin_bitmask: int) -> List[KonashiGpioPinLevel]:
         """
         Get a list of current GPIO output levels for the pins specified in the bitmask.
         """
         l = []
-        buf = await self._ble_client.read_gatt_char(KONASHI_UUID_GPIO_OUTPUT_GET)
+        try:
+            buf = await self._ble_client.read_gatt_char(KONASHI_UUID_GPIO_OUTPUT_GET)
+        except BleakError as e:
+            raise KonashiError(f'Error occured during BLE read: "{str(e)}"')
         self._gpio_output = _KonashiGpioPinsIO.from_buffer_copy(buf)
         for i in range(KONASHI_GPIO_COUNT):
             if (pin_bitmask&(1<<i)) > 0:
@@ -530,7 +570,10 @@ class Konashi:
         Get a list of current GPIO input levels for the pins specified in the bitmask.
         """
         l = []
-        buf = await self._ble_client.read_gatt_char(KONASHI_UUID_GPIO_INPUT)
+        try:
+            buf = await self._ble_client.read_gatt_char(KONASHI_UUID_GPIO_INPUT)
+        except BleakError as e:
+            raise KonashiError(f'Error occured during BLE read: "{str(e)}"')
         self._gpio_input = _KonashiGpioPinsIO.from_buffer_copy(buf)
         for i in range(KONASHI_GPIO_COUNT):
             if (pin_bitmask&(1<<i)) > 0:
