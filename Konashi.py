@@ -58,6 +58,7 @@ KONASHI_UUID_BUILTIN_RGB_SET = "064d0402-8251-49d9-b6f3-f7ba35e5d0a1"
 KONASHI_UUID_BUILTIN_RGB_GET = "064d0403-8251-49d9-b6f3-f7ba35e5d0a1"
 
 
+### GPIO
 KONASHI_GPIO_COUNT = 8
 KONASHI_GPIO_FUNCTION_STR = ["DISABLED", "GPIO", "PWM", "I2C", "SPI"]
 class KonashiGpioPinFunction(Enum):
@@ -122,6 +123,28 @@ class KonashiGpioPinConfig(LittleEndianStructure):
         s += ")"
         return s
 _KonashiGpioPinsConfig = KonashiGpioPinConfig*KONASHI_GPIO_COUNT
+
+class KonashiGpioPinControl(Enum):
+    LOW = 0
+    HIGH = 1
+    TOGGLE = 2
+    def __int__(self):
+        return self.value
+class KonashiGpioPinLevel(Enum):
+    LOW = 0
+    HIGH = 1
+    INVALID = 2
+    def __int__(self):
+        return self.value
+class _KonashiGpioPinIO(LittleEndianStructure):
+    _pack_ = 1
+    _fields_ = [
+        ('level', c_uint8, 1),
+        ('', c_uint8, 3),
+        ('valid', c_uint8, 1),
+        ('', c_uint8, 3)
+    ]
+_KonashiGpioPinsIO = _KonashiGpioPinIO*KONASHI_GPIO_COUNT
 
 class KonashiSoftPwmPinConfig(LittleEndianStructure):
     _pack_ = 1
@@ -200,27 +223,6 @@ class KonashiSpiConfig(LittleEndianStructure):
     ]
 
 
-class KonashiGpioPinControl(Enum):
-    LOW = 0
-    HIGH = 1
-    TOGGLE = 2
-    def __int__(self):
-        return self.value
-class KonashiGpioPinLevel(Enum):
-    LOW = 0
-    HIGH = 1
-    INVALID = 2
-    def __int__(self):
-        return self.value
-class _KonashiGpioPinIO(LittleEndianStructure):
-    _pack_ = 1
-    _fields_ = [
-        ('level', c_uint8, 1),
-        ('', c_uint8, 3),
-        ('valid', c_uint8, 1),
-        ('', c_uint8, 3)
-    ]
-_KonashiGpioPinsIO = _KonashiGpioPinIO*KONASHI_GPIO_COUNT
 
 
 class KonashiError(Exception):
@@ -477,7 +479,7 @@ class Konashi:
             self._builtin_rgb_transition_end_cb = None
 
 
-    async def gpioConfigSet(self, configs: Sequence(Tuple[int, bool, KonashiGpioPinConfig])) -> None:
+    async def gpioPinConfigSet(self, configs: Sequence(Tuple[int, bool, KonashiGpioPinConfig])) -> None:
         """
         Specify a list of configurations in the format (pin_bitmask, enable, config) with:
           pin_bitmask (int): a bitmask of the pins to apply this configuration to
@@ -496,7 +498,7 @@ class Konashi:
         except BleakError as e:
             raise KonashiError(f'Error occured during BLE write: "{str(e)}"')
 
-    async def gpioConfigGet(self, pin_bitmask: int) -> List[KonashiGpioPinConfig]:
+    async def gpioPinConfigGet(self, pin_bitmask: int) -> List[KonashiGpioPinConfig]:
         """
         Get a list of current GPIO configurations for the pins specified in the bitmask.
         """
@@ -510,7 +512,7 @@ class Konashi:
             if (pin_bitmask&(1<<i)) > 0:
                 l.append(self._gpio_config[i])
         return l
-    async def gpioConfigGetAll(self) -> List[KonashiGpioPinConfig]:
+    async def gpioPinConfigGetAll(self) -> List[KonashiGpioPinConfig]:
         """
         Get a list of current GPIO configurations for all pins.
         """
@@ -524,7 +526,7 @@ class Konashi:
         """
         self._gpio_input_cb = notify_callback
 
-    async def gpioOutputSet(self, controls: Sequence(Tuple[int, KonashiGpioPinControl])) -> None:
+    async def gpioPinOutputSet(self, controls: Sequence(Tuple[int, KonashiGpioPinControl])) -> None:
         """
         Specify a list of controls in the format (pin, control) with:
           pin (int): a bitmask of the pins to apply this control to
@@ -542,7 +544,7 @@ class Konashi:
         except BleakError as e:
             raise KonashiError(f'Error occured during BLE write: "{str(e)}"')
 
-    async def gpioOutputGet(self, pin_bitmask: int) -> List[KonashiGpioPinLevel]:
+    async def gpioPinOutputGet(self, pin_bitmask: int) -> List[KonashiGpioPinLevel]:
         """
         Get a list of current GPIO output levels for the pins specified in the bitmask.
         """
@@ -559,13 +561,13 @@ class Konashi:
                 else:
                     l.append(KonashiGpioPinLevel(self._gpio_output[i].level))
         return l
-    async def gpioOutputGetAll(self) -> List[KonashiGpioPinLevel]:
+    async def gpioPinOutputGetAll(self) -> List[KonashiGpioPinLevel]:
         """
         Get a list of current GPIO output levels for all pins.
         """
         return await self.gpioOutputGet(0xFF)
 
-    async def gpioInputGet(self, pin_bitmask: int) -> List[KonashiGpioPinLevel]:
+    async def gpioPinInputGet(self, pin_bitmask: int) -> List[KonashiGpioPinLevel]:
         """
         Get a list of current GPIO input levels for the pins specified in the bitmask.
         """
@@ -582,7 +584,7 @@ class Konashi:
                 else:
                     l.append(KonashiGpioPinLevel(self._gpio_input[i].level))
         return l
-    async def gpioInputGetAll(self) -> List[KonashiGpioPinLevel]:
+    async def gpioPinInputGetAll(self) -> List[KonashiGpioPinLevel]:
         """
         Get a list of current GPIO input levels for all pins.
         """
