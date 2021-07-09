@@ -81,17 +81,9 @@ class System(KonashiElementBase._KonashiElementBase):
         await self._read(KONASHI_UUID_SYSTEM_SETTINGS_GET)
         return self._settings
 
-    async def get_nvm_use(self) -> bool:
-        await self._read(KONASHI_UUID_SYSTEM_SETTINGS_GET)
-        return True if self._settings.nvm_use==NvmUse.ENABLED else False
-
     async def set_nvm_use(self, enable: bool) -> None:
         b = bytearray([KONASHI_SET_CMD_SYSTEM, _Command.NVM_USE_SET, enable])
         await self._write(KONASHI_UUID_SETTINGS_CMD, b)
-
-    async def get_nvm_save_trigger(self) -> NvmSaveTrigger:
-        await self._read(KONASHI_UUID_SYSTEM_SETTINGS_GET)
-        return self._settings.nvm_save_trigger
 
     async def set_nvm_save_trigger(self, trigger: NvmSaveTrigger) -> None:
         b = bytearray([KONASHI_SET_CMD_SYSTEM, _Command.NVM_SAVE_TRIGGER_SET, trigger])
