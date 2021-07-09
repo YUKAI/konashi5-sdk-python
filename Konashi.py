@@ -13,6 +13,12 @@ from bleak import *
 
 KONASHI_ADV_SERVICE_UUID = "064d0100-8251-49d9-b6f3-f7ba35e5d0a1"
 
+KONASHI_UUID_SETTINGS_CMD = "064d0101-8251-49d9-b6f3-f7ba35e5d0a1"
+KONASHI_SET_CMD_SYSTEM = 0x01
+KONASHI_SET_CMD_BLUETOOTH = 0x02
+KONASHI_UUID_SYSTEM_SETTINGS_GET = "064d0102-8251-49d9-b6f3-f7ba35e5d0a1"
+KONASHI_UUID_BLUETOOTH_SETTINGS_GET = "064d0103-8251-49d9-b6f3-f7ba35e5d0a1"
+
 KONASHI_UUID_CONFIG_CMD = "064d0201-8251-49d9-b6f3-f7ba35e5d0a1"
 KONASHI_CFG_CMD_GPIO = 0x01
 KONASHI_CFG_CMD_SOFTPWM = 0x02
@@ -56,6 +62,97 @@ KONASHI_UUID_BUILTIN_PRESENCE = "00002ae2-0000-1000-8000-00805f9b34fb"
 KONASHI_UUID_BUILTIN_ACCELGYRO = "064d0401-8251-49d9-b6f3-f7ba35e5d0a1"
 KONASHI_UUID_BUILTIN_RGB_SET = "064d0402-8251-49d9-b6f3-f7ba35e5d0a1"
 KONASHI_UUID_BUILTIN_RGB_GET = "064d0403-8251-49d9-b6f3-f7ba35e5d0a1"
+
+
+### System
+class KonashiSystemCommand(IntEnum):
+    NVM_USE_SET = 1
+    NVM_SAVE_TRIGGER_SET = 2
+    NVM_SAVE_NOW = 3
+    NVM_ERASE_NOW = 4
+    FCT_BTN_EMULATE_PRESS = 5
+    FCT_BTN_EMULATE_LONG_PRESS = 6
+    FCT_BTN_EMULATE_VERY_LONG_PRESS = 7
+class KonashiNvmUse(IntEnum):
+    DISABLED = 0
+    ENABLED = 1
+class KonashiNvmSaveTrigger(IntEnum):
+    AUTO = 0
+    MANUAL = 1
+class KonashiSystemSettings(LittleEndianStructure):
+    _pack_ = 1
+    _fields_ = [
+        ('nvm_use', c_uint8),
+        ('nvm_save_trigger', c_uint8)
+    ]
+    def __str__(self):
+        s = "KonashiSystemSettings("
+        if self.nvm_use == KonashiNvmUse.ENABLED:
+            s += "NVM enabled"
+            s += ", NVM save " + ("auto" if self.nvm_save_trigger==KonashiNvmSaveTrigger.AUTO else "manual")
+        else:
+            s += "NVM disabled"
+        s += ")"
+        return s
+
+
+### Bluetooth
+class KonashiBluetoothFunction(IntEnum):
+    MESH = 0
+    EX_ADVERTISE = 1
+class KonashiBluetoothPrimaryPhy(IntEnum):
+    ONE_M_PHY = 0x01
+    CODED_PHY = 0x04
+class KonashiBluetoothSecondaryPhy(IntEnum):
+    ONE_M_PHY = 0x01
+    TWO_M_PHY = 0x02
+    CODED_PHY = 0x04
+class KonashiBluetoothConnectionPhy(IntFlag):
+    ONE_M_PHY_UNCODED  = 0x01
+    TWO_M_PHY_UNCODED  = 0x02
+    CODED_PHY_125k     = 0x04
+    CODED_PHY_500k     = 0x08
+class KonashiBluetoothExAdvertiseContents(IntFlag):
+    NONE         = 0x00000000
+    DEVICE_NAME  = 0x01000000
+    UUID128      = 0x02000000
+    MANUF_DATA   = 0x04000000
+    BLE_ALL      = 0x07000000
+    GPIO7_IN     = 0x00800000
+    GPIO6_IN     = 0x00400000
+    GPIO5_IN     = 0x00200000
+    GPIO4_IN     = 0x00100000
+    GPIO3_IN     = 0x00080000
+    GPIO2_IN     = 0x00040000
+    GPIO1_IN     = 0x00020000
+    GPIO0_IN     = 0x00010000
+    GPIO_IN_ALL  = 0x00FF0000
+    AIO2_IN      = 0x00004000
+    AIO1_IN      = 0x00002000
+    AIO0_IN      = 0x00001000
+    AIO_IN_ALL   = 0x00007000
+class KonashiBluetoothSettings(LittleEndianStructure):
+    _pack_ = 1
+    _fields_ = [
+        ('enabled_functions', c_uint8),
+        ('main_conn_pref_phy', c_uint8, 4),
+        ('main_adv_sec_phy', c_uint8, 4),
+        ('ex_adv_sec_phy', c_uint8, 4),
+        ('ex_adv_prim_phy', c_uint8, 4),
+        ('ex_adv_contents', c_uint32, 28),
+        ('ex_adv_status', c_uint32, 4)
+    ]
+    def __str__(self):
+        s = "KonashiBluetoothSettings("
+        s += "EN=0x{:02x}".format(self.enabled_functions)
+        s += ", MainAdvSecPHY=0x{:01x}".format(self.main_adv_sec_phy)
+        s += ", MainConnPHY=0x{:01x}".format(self.main_conn_pref_phy)
+        s += ", ExAdvPrimPHY=0x{:01x}".format(self.ex_adv_prim_phy)
+        s += ", ExAdvSecPHY=0x{:01x}".format(self.ex_adv_sec_phy)
+        s += ", ExAdvStatus=0x{:01x}".format(self.ex_adv_status)
+        s += ", ExAdvContents=0x{:07x}".format(self.ex_adv_contents)
+        s += ")"
+        return s
 
 
 ### GPIO
@@ -323,6 +420,8 @@ class Konashi:
         self._name = name
         self._ble_dev = None
         self._ble_client = None
+        self._system_settings: KonashiSystemSettings = KonashiSystemSettings()
+        self._bluetooth_settings: KonashiBluetoothSettings = KonashiBluetoothSettings()
         self._gpio_config = _KonashiGpioPinsConfig()
         self._gpio_output = _KonashiGpioPinsIO()
         self._gpio_input = _KonashiGpioPinsIO()
@@ -437,6 +536,14 @@ class Konashi:
             self._ble_client = None
             raise KonashiError(f'Error occured during BLE connect: "{str(e)}"')
         if _con:
+            buf = await self._ble_client.read_gatt_char(KONASHI_UUID_SYSTEM_SETTINGS_GET)
+            self._system_settings = KonashiSystemSettings.from_buffer_copy(buf)
+            await self._ble_client.start_notify(KONASHI_UUID_SYSTEM_SETTINGS_GET, self._ntf_cb_system_settings)
+            buf = await self._ble_client.read_gatt_char(KONASHI_UUID_BLUETOOTH_SETTINGS_GET)
+            buf[3:7] = buf[-1:]+buf[-2:-1]+buf[-3:-2]+buf[-4:-3]
+            self._bluetooth_settings = KonashiBluetoothSettings.from_buffer_copy(buf)
+            await self._ble_client.start_notify(KONASHI_UUID_BLUETOOTH_SETTINGS_GET, self._ntf_cb_bluetooth_settings)
+
             buf = await self._ble_client.read_gatt_char(KONASHI_UUID_GPIO_CONFIG_GET)
             self._gpio_config = _KonashiGpioPinsConfig.from_buffer_copy(buf)
             await self._ble_client.start_notify(KONASHI_UUID_GPIO_CONFIG_GET, self._ntf_cb_gpio_config_get)
@@ -480,6 +587,12 @@ class Konashi:
             await self._ble_client.disconnect()
             self._ble_client = None
 
+
+    def _ntf_cb_system_settings(self, sender, data):
+        self._system_settings = KonashiSystemSettings.from_buffer_copy(data)
+    def _ntf_cb_bluetooth_settings(self, sender, data):
+        data[3:7] = data[-1:]+data[-2:-1]+data[-3:-2]+data[-4:-3]
+        self._bluetooth_settings = KonashiBluetoothSettings.from_buffer_copy(data)
 
     def _ntf_cb_gpio_config_get(self, sender, data):
         self._gpio_config = _KonashiGpioPinsConfig.from_buffer_copy(data)
@@ -566,6 +679,111 @@ class Konashi:
         if self._builtin_rgb_transition_end_cb is not None:
             self._builtin_rgb_transition_end_cb(color)
             self._builtin_rgb_transition_end_cb = None
+
+
+    ### System
+    async def systemSettingsGet(self) -> KonashiSystemSettings:
+        try:
+            buf = await self._ble_client.read_gatt_char(KONASHI_UUID_SYSTEM_SETTINGS_GET)
+        except BleakError as e:
+            raise KonashiError(f'Error occured during BLE read: "{str(e)}"')
+        self._system_settings = KonashiSystemSettings.from_buffer_copy(buf)
+        return self._system_settings
+
+    async def systemSettingsSetNvmUse(self, enable: bool) -> None:
+        b = bytearray([KONASHI_SET_CMD_SYSTEM, KonashiSystemCommand.NVM_USE_SET, enable])
+        try:
+            await self._ble_client.write_gatt_char(KONASHI_UUID_SETTINGS_CMD, b)
+        except BleakError as e:
+            raise KonashiError(f'Error occured during BLE write: "{str(e)}"')
+
+    async def systemSettingsSetNvmSaveTrigger(self, trigger: KonashiNvmSaveTrigger) -> None:
+        b = bytearray([KONASHI_SET_CMD_SYSTEM, KonashiSystemCommand.NVM_SAVE_TRIGGER_SET, int(trigger)])
+        try:
+            await self._ble_client.write_gatt_char(KONASHI_UUID_SETTINGS_CMD, b)
+        except BleakError as e:
+            raise KonashiError(f'Error occured during BLE write: "{str(e)}"')
+
+    async def systemSettingsNvmSaveNow(self) -> None:
+        b = bytearray([KONASHI_SET_CMD_SYSTEM, KonashiSystemCommand.NVM_SAVE_NOW])
+        try:
+            await self._ble_client.write_gatt_char(KONASHI_UUID_SETTINGS_CMD, b)
+        except BleakError as e:
+            raise KonashiError(f'Error occured during BLE write: "{str(e)}"')
+
+    async def systemSettingsNvmEraseNow(self) -> None:
+        b = bytearray([KONASHI_SET_CMD_SYSTEM, KonashiSystemCommand.NVM_ERASE_NOW])
+        try:
+            await self._ble_client.write_gatt_char(KONASHI_UUID_SETTINGS_CMD, b)
+        except BleakError as e:
+            raise KonashiError(f'Error occured during BLE write: "{str(e)}"')
+
+    async def systemSettingsFunctionButtonPress(self) -> None:
+        b = bytearray([KONASHI_SET_CMD_SYSTEM, KonashiSystemCommand.FCT_BTN_EMULATE_PRESS])
+        try:
+            await self._ble_client.write_gatt_char(KONASHI_UUID_SETTINGS_CMD, b)
+        except BleakError as e:
+            raise KonashiError(f'Error occured during BLE write: "{str(e)}"')
+
+    async def systemSettingsFunctionButtonLongPress(self) -> None:
+        b = bytearray([KONASHI_SET_CMD_SYSTEM, KonashiSystemCommand.FCT_BTN_EMULATE_LONG_PRESS])
+        try:
+            await self._ble_client.write_gatt_char(KONASHI_UUID_SETTINGS_CMD, b)
+        except BleakError as e:
+            raise KonashiError(f'Error occured during BLE write: "{str(e)}"')
+
+    async def systemSettingsFunctionButtonVeryLongPress(self) -> None:
+        b = bytearray([KONASHI_SET_CMD_SYSTEM, KonashiSystemCommand.FCT_BTN_EMULATE_VERY_LONG_PRESS])
+        try:
+            await self._ble_client.write_gatt_char(KONASHI_UUID_SETTINGS_CMD, b)
+        except BleakError as e:
+            raise KonashiError(f'Error occured during BLE write: "{str(e)}"')
+
+
+    ### Bluetooth
+    async def bluetoothSettingsGet(self) -> KonashiBluetoothSettings:
+        try:
+            buf = await self._ble_client.read_gatt_char(KONASHI_UUID_BLUETOOTH_SETTINGS_GET)
+        except BleakError as e:
+            raise KonashiError(f'Error occured during BLE read: "{str(e)}"')
+        buf[3:7] = buf[-1:]+buf[-2:-1]+buf[-3:-2]+buf[-4:-3]
+        self._bluetooth_settings = KonashiBluetoothSettings.from_buffer_copy(buf)
+        return self._bluetooth_settings
+
+    async def bluetoothSettingsFunctionEnable(self, function: KonashiBluetoothFunction, enable: bool) -> None:
+        b = bytearray([KONASHI_SET_CMD_BLUETOOTH, (function<<4)+enable])
+        try:
+            await self._ble_client.write_gatt_char(KONASHI_UUID_SETTINGS_CMD, b)
+        except BleakError as e:
+            raise KonashiError(f'Error occured during BLE write: "{str(e)}"')
+
+    async def bluetoothSettingSetsMainAdvSecPhy(self, phy: KonashiBluetoothSecondaryPhy) -> None:
+        b = bytearray([KONASHI_SET_CMD_BLUETOOTH, 0xF0+phy])
+        try:
+            await self._ble_client.write_gatt_char(KONASHI_UUID_SETTINGS_CMD, b)
+        except BleakError as e:
+            raise KonashiError(f'Error occured during BLE write: "{str(e)}"')
+
+    async def bluetoothSettingsSetMainPreferredConnPhy(self, phy: KonashiBluetoothConnectionPhy) -> None:
+        b = bytearray([KONASHI_SET_CMD_BLUETOOTH, 0xE0+phy])
+        try:
+            await self._ble_client.write_gatt_char(KONASHI_UUID_SETTINGS_CMD, b)
+        except BleakError as e:
+            raise KonashiError(f'Error occured during BLE write: "{str(e)}"')
+
+    async def bluetoothSettingsSetExAdvPhy(self, prim_phy: KonashiBluetoothPrimaryPhy, sec_phy: KonashiBluetoothSecondaryPhy) -> None:
+        b = bytearray([KONASHI_SET_CMD_BLUETOOTH, 0xD0+prim_phy, 0xC0+sec_phy])
+        try:
+            await self._ble_client.write_gatt_char(KONASHI_UUID_SETTINGS_CMD, b)
+        except BleakError as e:
+            raise KonashiError(f'Error occured during BLE write: "{str(e)}"')
+
+    async def bluetoothSettingsSetExAdvContents(self, contents: KonashiBluetoothExAdvertiseContents) -> None:
+        b = bytearray([KONASHI_SET_CMD_BLUETOOTH, 0xB0+((contents>>24)&0x0F), (contents>>16)&0xFF, (contents>>8)&0xFF, (contents>>0)&0xFF])
+        try:
+            await self._ble_client.write_gatt_char(KONASHI_UUID_SETTINGS_CMD, b)
+        except BleakError as e:
+            raise KonashiError(f'Error occured during BLE write: "{str(e)}"')
 
 
     ### GPIO
