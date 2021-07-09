@@ -65,15 +65,7 @@ class System(KonashiElementBase._KonashiElementBase):
         return s
 
     def __repr__(self):
-        return f'Konashi(name="{self._name}")'
-
-    def __eq__(self, other):
-        if self._ble_dev is not None and other._ble_dev is not None:
-            return self._ble_dev.address == other._ble_dev.address
-        return self._name == other._name
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
+        return "KonashiSettingsSystem(0x{:02x}, 0x{:02x})".format(self._settings.nvm_use, self._settings.nvm_save_trigger)
 
 
     async def _on_connect(self) -> None:
