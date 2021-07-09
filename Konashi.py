@@ -11,6 +11,7 @@ from enum import *
 from bleak import *
 
 from .settings import Settings
+from .Errors import *
 
 
 KONASHI_ADV_SERVICE_UUID = "064d0100-8251-49d9-b6f3-f7ba35e5d0a1"
@@ -369,22 +370,6 @@ class KonashiSpiConfig(LittleEndianStructure):
 
 
 
-class KonashiError(Exception):
-    pass
-
-class NotFoundError(Exception):
-    pass
-
-class InvalidDeviceError(Exception):
-    pass
-
-class PinInvalidError(Exception):
-    pass
-
-class PinUnavailableError(Exception):
-    pass
-
-
 class Konashi:
     def __init__(self, name: str) -> None:
         self._name = name
@@ -506,7 +491,7 @@ class Konashi:
             self._ble_client = None
             raise KonashiError(f'Error occured during BLE connect: "{str(e)}"')
         if _con:
-            await self.settings.system._on_connect()
+            await self._settings._on_connect()
             buf = await self._ble_client.read_gatt_char(KONASHI_UUID_BLUETOOTH_SETTINGS_GET)
             buf[3:7] = buf[-1:]+buf[-2:-1]+buf[-3:-2]+buf[-4:-3]
             self._bluetooth_settings = KonashiBluetoothSettings.from_buffer_copy(buf)
