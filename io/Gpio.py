@@ -163,8 +163,8 @@ class Gpio(KonashiElementBase._KonashiElementBase):
         for config in configs:
             for i in range(KONASHI_GPIO_COUNT):
                 if (config[0]&(1<<i)) > 0:
-                    if PinFunction(self._gpio_config[i].function) != PinFunction.DISABLED and PinFunction(self._gpio_config[i].function) != PinFunction.GPIO:
-                        raise PinUnavailableError(f'Pin {i} is already configured as {_KONASHI_GPIO_FUNCTION_STR[self._gpio_config[i].function]}')
+                    if PinFunction(self._config[i].function) != PinFunction.DISABLED and PinFunction(self._config[i].function) != PinFunction.GPIO:
+                        raise PinUnavailableError(f'Pin {i} is already configured as {_KONASHI_GPIO_FUNCTION_STR[self._config[i].function]}')
                     b.extend(bytearray([(i<<4)|(0x1 if config[1] else 0x0), bytes(config[2])[1]]))
         await self._write(KONASHI_UUID_CONFIG_CMD, b)
 
@@ -197,8 +197,8 @@ class Gpio(KonashiElementBase._KonashiElementBase):
         for control in controls:
             for i in range(KONASHI_GPIO_COUNT):
                 if (control[0]&(1<<i)) > 0:
-                    if PinFunction(self._gpio_config[i].function) != PinFunction.GPIO:
-                        raise PinUnavailableError(f'Pin {i} is not configured as GPIO (configured as {_KONASHI_GPIO_FUNCTION_STR[self._gpio_config[i].function]})')
+                    if PinFunction(self._config[i].function) != PinFunction.GPIO:
+                        raise PinUnavailableError(f'Pin {i} is not configured as GPIO (configured as {_KONASHI_GPIO_FUNCTION_STR[self._config[i].function]})')
                     b.extend(bytearray([(i<<4)|(control[1])]))
         await self._write(KONASHI_UUID_CONFIG_CMD, b)
 
