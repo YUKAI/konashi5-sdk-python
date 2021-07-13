@@ -111,8 +111,8 @@ class SoftPWM(KonashiElementBase._KonashiElementBase):
         self._gpio = gpio
         self._config = _PinsConfig()
         self._output = _PinsControl()
-        self._softpwm_trans_end_cb = None
-        self._softpwm_ongoing_control = []
+        self._trans_end_cb = None
+        self._ongoing_control = []
 
     def __str__(self):
         return f'KonashiSoftPWM'
@@ -134,9 +134,9 @@ class SoftPWM(KonashiElementBase._KonashiElementBase):
     def _ntf_cb_output(self, sender, data):
         self._output = _PinsControl.from_buffer_copy(data)
         for i in range(KONASHI_SOFTPWM_COUNT):
-            if i in self._softpwm_ongoing_control and self._output[i].transition_duration == 0:
-                self._softpwm_ongoing_control.remove(i)
-                self._softpwm_trans_end_cb(i)
+            if i in self._ongoing_control and self._output[i].transition_duration == 0:
+                self._ongoing_control.remove(i)
+                self._trans_end_cb(i)
 
 
     async def config_pins(self, configs: Sequence(Tuple[int, PinConfig])) -> None:
@@ -170,7 +170,7 @@ class SoftPWM(KonashiElementBase._KonashiElementBase):
         The callback is called with parameters:
           pin (int)
         """
-        self._softpwm_trans_end_cb = notify_callback
+        self._trans_end_cb = notify_callback
 
     async def control_pins(self, controls: Sequence(Tuple[int, PinControl])) -> None:
         """
@@ -197,8 +197,8 @@ class SoftPWM(KonashiElementBase._KonashiElementBase):
                     ongoing_control.append(i)
         await self._write(KONASHI_UUID_CONTROL_CMD, b)
         for i in ongoing_control:
-            if i not in self._softpwm_ongoing_control:
-                self._softpwm_ongoing_control.append(i)
+            if i not in self._ongoing_control:
+                self._ongoing_control.append(i)
 
     async def get_pins_control(self, pin_bitmask: int) -> List[PinControl]:
         """
