@@ -160,7 +160,7 @@ class Konashi:
         _invalid = False
         _scan_task = None
         _scanner = BleakScanner()
-        def _scan_cb(dev: BLEDevice, adv: AdvertisementData):
+        def _scan_cb(dev, adv):
             nonlocal _konashi
             nonlocal _invalid
             if dev.name == name:
@@ -202,7 +202,7 @@ class Konashi:
         if not timeout > 0.0:
             raise ValueError("Timeout should be longer than 0 seconds")
         _konashi = []
-        def _scan_cb(dev: BLEDevice, adv: AdvertisementData):
+        def _scan_cb(dev, adv):
             nonlocal _konashi
             if KONASHI_ADV_SERVICE_UUID in adv.service_uuids:
                 k = Konashi(dev.name)

@@ -12,6 +12,7 @@ import abc
 from bleak import *
 
 from .Errors import *
+from .Konashi import Konashi
 
 
 class _KonashiElementBase:
