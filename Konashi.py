@@ -68,22 +68,6 @@ KONASHI_UUID_BUILTIN_RGB_SET = "064d0402-8251-49d9-b6f3-f7ba35e5d0a1"
 KONASHI_UUID_BUILTIN_RGB_GET = "064d0403-8251-49d9-b6f3-f7ba35e5d0a1"
 
 
-KONASHI_HARDPWM_COUNT = 4
-class KonashiHardPwmPinConfig(LittleEndianStructure):
-    _pack_ = 1
-    _fields_ = [
-        ('enabled', c_uint8, 1),
-        ('', c_uint8, 7)
-    ]
-class KonashiHardPwmConfig(LittleEndianStructure):
-    _pack_ = 1
-    _fields_ = [
-        ('pin', KonashiHardPwmPinConfig*KONASHI_HARDPWM_COUNT),
-        ('prescale', c_uint8, 4),
-        ('clock', c_uint8, 4),
-        ('period', c_uint16)
-    ]
-
 KONASHI_AIO_COUNT = 3
 class KonashiAnalogPinConfig(LittleEndianStructure):
     _pack_ = 1
@@ -255,13 +239,11 @@ class Konashi:
             await self._settings._on_connect()
             await self._io._on_connect()
 
-            await self._ble_client.start_notify(KONASHI_UUID_HARDPWM_CONFIG_GET, self._ntf_cb_hardpwm_config_get)
             await self._ble_client.start_notify(KONASHI_UUID_ANALOG_CONFIG_GET, self._ntf_cb_analog_config_get)
             await self._ble_client.start_notify(KONASHI_UUID_I2C_CONFIG_GET, self._ntf_cb_i2c_config_get)
             await self._ble_client.start_notify(KONASHI_UUID_UART_CONFIG_GET, self._ntf_cb_uart_config_get)
             await self._ble_client.start_notify(KONASHI_UUID_SPI_CONFIG_GET, self._ntf_cb_spi_config_get)
 
-            await self._ble_client.start_notify(KONASHI_UUID_HARDPWM_OUTPUT_GET, self._ntf_cb_hardpwm_output_get)
             await self._ble_client.start_notify(KONASHI_UUID_ANALOG_OUTPUT_GET, self._ntf_cb_analog_output_get)
             await self._ble_client.start_notify(KONASHI_UUID_ANALOG_INPUT, self._ntf_cb_analog_input)
             await self._ble_client.start_notify(KONASHI_UUID_I2C_DATA_IN, self._ntf_cb_i2c_data_in)
@@ -291,8 +273,6 @@ class Konashi:
     def io(self) -> IO:
         return self._io
 
-    def _ntf_cb_hardpwm_config_get(self, sender, data):
-        pass
     def _ntf_cb_analog_config_get(self, sender, data):
         pass
     def _ntf_cb_i2c_config_get(self, sender, data):
@@ -302,8 +282,6 @@ class Konashi:
     def _ntf_cb_spi_config_get(self, sender, data):
         pass
 
-    def _ntf_cb_hardpwm_output_get(self, sender, data):
-        pass
     def _ntf_cb_analog_output_get(self, sender, data):
         pass
     def _ntf_cb_analog_input(self, sender, data):
