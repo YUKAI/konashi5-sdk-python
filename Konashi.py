@@ -68,29 +68,6 @@ KONASHI_UUID_BUILTIN_RGB_SET = "064d0402-8251-49d9-b6f3-f7ba35e5d0a1"
 KONASHI_UUID_BUILTIN_RGB_GET = "064d0403-8251-49d9-b6f3-f7ba35e5d0a1"
 
 
-KONASHI_AIO_COUNT = 3
-class KonashiAnalogPinConfig(LittleEndianStructure):
-    _pack_ = 1
-    _fields_ = [
-        ('direction', c_uint8, 1),
-        ('send_on_change', c_uint8, 1),
-        ('', c_uint8, 1),
-        ('enabled', c_uint8, 1),
-        ('', c_uint8, 4)
-    ]
-class KonashiAnalogConfig(LittleEndianStructure):
-    _pack_ = 1
-    _fields_ = [
-        ('pin', KonashiAnalogPinConfig*KONASHI_AIO_COUNT),
-        ('adc_update_period', c_uint8),
-        ('adc_voltage_reference', c_uint8, 4),
-        ('', c_uint8, 4),
-        ('vdac_voltage_reference', c_uint8, 4),
-        ('', c_uint8, 4),
-        ('idac_current_step', c_uint8, 4),
-        ('', c_uint8, 4)
-    ]
-
 class KonashiI2cConfig(LittleEndianStructure):
     _pack_ = 1
     _fields_ = [
@@ -239,13 +216,10 @@ class Konashi:
             await self._settings._on_connect()
             await self._io._on_connect()
 
-            await self._ble_client.start_notify(KONASHI_UUID_ANALOG_CONFIG_GET, self._ntf_cb_analog_config_get)
             await self._ble_client.start_notify(KONASHI_UUID_I2C_CONFIG_GET, self._ntf_cb_i2c_config_get)
             await self._ble_client.start_notify(KONASHI_UUID_UART_CONFIG_GET, self._ntf_cb_uart_config_get)
             await self._ble_client.start_notify(KONASHI_UUID_SPI_CONFIG_GET, self._ntf_cb_spi_config_get)
 
-            await self._ble_client.start_notify(KONASHI_UUID_ANALOG_OUTPUT_GET, self._ntf_cb_analog_output_get)
-            await self._ble_client.start_notify(KONASHI_UUID_ANALOG_INPUT, self._ntf_cb_analog_input)
             await self._ble_client.start_notify(KONASHI_UUID_I2C_DATA_IN, self._ntf_cb_i2c_data_in)
             await self._ble_client.start_notify(KONASHI_UUID_UART_DATA_IN, self._ntf_cb_uart_data_in)
             await self._ble_client.start_notify(KONASHI_UUID_UART_DATA_SEND_DONE, self._ntf_cb_uart_data_send_done)
@@ -273,8 +247,6 @@ class Konashi:
     def io(self) -> IO:
         return self._io
 
-    def _ntf_cb_analog_config_get(self, sender, data):
-        pass
     def _ntf_cb_i2c_config_get(self, sender, data):
         pass
     def _ntf_cb_uart_config_get(self, sender, data):
@@ -282,10 +254,6 @@ class Konashi:
     def _ntf_cb_spi_config_get(self, sender, data):
         pass
 
-    def _ntf_cb_analog_output_get(self, sender, data):
-        pass
-    def _ntf_cb_analog_input(self, sender, data):
-        pass
     def _ntf_cb_i2c_data_in(self, sender, data):
         pass
     def _ntf_cb_uart_data_in(self, sender, data):
