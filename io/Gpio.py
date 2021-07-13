@@ -146,7 +146,7 @@ class Gpio(KonashiElementBase._KonashiElementBase):
         for i in range(KONASHI_GPIO_COUNT):
             if data[i]&0x10:
                 val = data[i]&0x01
-                if self._gpio[i].level != val:
+                if self._input[i].level != val:
                     if self._input_cb is not None:
                         self._input_cb(i, val)
         self._input = _PinsIO.from_buffer_copy(data)
