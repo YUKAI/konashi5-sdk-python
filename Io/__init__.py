@@ -8,7 +8,7 @@ from . import HardPWM
 from . import Analog
 
 
-class IO:
+class Io:
     def __init__(self, konashi):
         self._gpio = Gpio.Gpio(konashi)
         self._softpwm = SoftPWM.SoftPWM(konashi, self._gpio)

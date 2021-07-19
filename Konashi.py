@@ -10,8 +10,8 @@ from enum import *
 
 from bleak import *
 
-from .settings import Settings
-from .io import IO
+from .Settings import Settings
+from .Io import IO
 from .Errors import *
 
 
