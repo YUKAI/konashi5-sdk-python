@@ -43,6 +43,9 @@ class IdacRange(IntEnum):
     RANGE1 = 0x1+1  # 1.6~4.7uA range, 100nA step
     RANGE2 = 0x2+1  # 0.5~16uA range, 500nA step
     RANGE3 = 0x3+1  # 2~64uA range, 2000nA step
+class PinDirection(IntEnum):
+    INPUT = 0
+    OUTPUT = 1
 class PinConfig(LittleEndianStructure):
     _pack_ = 1
     _fields_ = [
@@ -52,6 +55,17 @@ class PinConfig(LittleEndianStructure):
         ('enabled', c_uint8, 1),
         ('', c_uint8, 4)
     ]
+    def __init__(self, enabled: bool, direction: PinDirection=PinDirection.INPUT, send_on_change: bool=True):
+        """
+        direction (PinDirection): the pin direction
+        send_on_change (bool): if true, a notification is sent on pin level change
+        pull_down (bool): if true, activate the pull down resistor
+        pull_up (bool): if true, activate the pull up resistor
+        wired_function (PinWiredFunction): use the pin in a wired function mode
+        """
+        self.enabled = enabled
+        self.send_on_change = send_on_change
+        self.direction = direction
 class AnalogConfig(LittleEndianStructure):
     _pack_ = 1
     _fields_ = [
@@ -149,6 +163,20 @@ class Analog(KonashiElementBase._KonashiElementBase):
         self._input = _new_input
 
 
+    def _calc_voltage_for_value(self, value: int) -> float:
+        max_ref = None
+        if self._config.analog.adc_voltage_reference == AdcRef.DISABLE:
+            return None
+        elif self._config.analog.adc_voltage_reference == AdcRef.REF_1V25:
+            max_ref = 1.25
+        elif self._config.analog.adc_voltage_reference == AdcRef.REF_2V5:
+            max_ref = 2.5
+        elif self._config.analog.adc_voltage_reference == AdcRef.REF_VDD:
+            max_ref = 3.3
+        else:
+            return None
+        return value*max_ref/65535
+
     async def config_adc_period(self, period: float) -> None:
         """
         Set the ADC read period.
@@ -210,6 +238,53 @@ class Analog(KonashiElementBase._KonashiElementBase):
                     b.extend(bytearray([i])+bytearray(control[1]))
         await self._write(KONASHI_UUID_CONFIG_CMD, b)
 
+    def calc_control_value_for_voltage(self, voltage: float) -> int:
+        """
+        Convert target voltage to control value for controling the VDAC output.
+        voltage: The target voltage
+        """
+        max_ref = None
+        if self._config.analog.vdac_voltage_reference == VdacRef.DISABLE:
+            raise KonashiError("The VDAC is not enabled")
+        elif self._config.analog.vdac_voltage_reference == VdacRef.REF_1V25LN or self._config.analog.vdac_voltage_reference == VdacRef.REF_1V25:
+            max_ref = 1.25
+        elif self._config.analog.vdac_voltage_reference == VdacRef.REF_2V5LN or self._config.analog.vdac_voltage_reference == VdacRef.REF_2V5:
+            max_ref = 2.5
+        elif self._config.analog.vdac_voltage_reference == VdacRef.REF_VDD:
+            max_ref = 3.3
+        else:
+            raise KonashiError("The VDAC configuration is not valid")
+        if voltage > max_ref:
+            raise ValueError(f"The target voltage needs to be in the range [0,{max_ref}]")
+        return round(voltage*4095/max_ref)
+
+    def calc_control_value_for_current(self, current: float) -> int:
+        """
+        Convert target current to control value for controling the IDAC output.
+        current: The target current in uA
+        """
+        first = None
+        last = None
+        if self._config.analog.idac_current_step == IdacRange.DISABLE:
+            raise KonashiError("The IDAC is not enabled")
+        elif self._config.analog.idac_current_step == IdacRange.RANGE0:
+            first = 0.05
+            last = 1.6
+        elif self._config.analog.idac_current_step == IdacRange.RANGE1:
+            first = 1.6
+            last = 4.7
+        elif self._config.analog.idac_current_step == IdacRange.RANGE2:
+            first = 0.5
+            last = 16
+        elif self._config.analog.idac_current_step == IdacRange.RANGE3:
+            first = 2
+            last = 64
+        else:
+            raise KonashiError("The IDAC configuration is not valid")
+        if not first <= current <= last:
+            raise ValueError(f"The target current needs to be in the range [{first},{last}]")
+        return round((current-first)*31/(last-first))
+
     async def get_pins_control(self, pin_bitmask: int) -> List[PinControl]:
         """
         Get a list of current Analog output levels for the pins specified in the bitmask.
@@ -235,5 +310,5 @@ class Analog(KonashiElementBase._KonashiElementBase):
                 if not self._input[i].valid:
                     l.append(None)
                 else:
-                    l.append(self._input[i].value)
+                    l.append(self._calc_voltage_for_value(self._input[i].value))
         return l
