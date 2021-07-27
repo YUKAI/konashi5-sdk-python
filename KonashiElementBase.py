@@ -12,11 +12,10 @@ import abc
 from bleak import *
 
 from .Errors import *
-from .Konashi import Konashi
 
 
 class _KonashiElementBase:
-    def __init__(self, konashi: Konashi):
+    def __init__(self, konashi):
         self._konashi = konashi
 
     async def _read(self, uuid: str) -> None:

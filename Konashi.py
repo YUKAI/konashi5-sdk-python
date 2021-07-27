@@ -11,7 +11,7 @@ from enum import *
 from bleak import *
 
 from .Settings import Settings
-from .Io import IO
+from .Io import Io
 from .Errors import *
 
 
@@ -68,14 +68,6 @@ KONASHI_UUID_BUILTIN_RGB_SET = "064d0402-8251-49d9-b6f3-f7ba35e5d0a1"
 KONASHI_UUID_BUILTIN_RGB_GET = "064d0403-8251-49d9-b6f3-f7ba35e5d0a1"
 
 
-class KonashiI2cConfig(LittleEndianStructure):
-    _pack_ = 1
-    _fields_ = [
-        ('mode', c_uint8, 1),
-        ('enabled', c_uint8, 1),
-        ('', c_uint8, 6)
-    ]
-
 class KonashiUartConfig(LittleEndianStructure):
     _pack_ = 1
     _fields_ = [
@@ -106,7 +98,7 @@ class Konashi:
         self._ble_dev = None
         self._ble_client = None
         self._settings: Settings = Settings(self)
-        self._io: IO = IO(self)
+        self._io: Io = Io(self)
         self._builtin_temperature_cb = None
         self._builtin_humidity_cb = None
         self._builtin_pressure_cb = None
@@ -216,11 +208,9 @@ class Konashi:
             await self._settings._on_connect()
             await self._io._on_connect()
 
-            await self._ble_client.start_notify(KONASHI_UUID_I2C_CONFIG_GET, self._ntf_cb_i2c_config_get)
             await self._ble_client.start_notify(KONASHI_UUID_UART_CONFIG_GET, self._ntf_cb_uart_config_get)
             await self._ble_client.start_notify(KONASHI_UUID_SPI_CONFIG_GET, self._ntf_cb_spi_config_get)
 
-            await self._ble_client.start_notify(KONASHI_UUID_I2C_DATA_IN, self._ntf_cb_i2c_data_in)
             await self._ble_client.start_notify(KONASHI_UUID_UART_DATA_IN, self._ntf_cb_uart_data_in)
             await self._ble_client.start_notify(KONASHI_UUID_UART_DATA_SEND_DONE, self._ntf_cb_uart_data_send_done)
             await self._ble_client.start_notify(KONASHI_UUID_SPI_DATA_IN, self._ntf_cb_spi_data_in)
@@ -244,18 +234,14 @@ class Konashi:
         return self._settings
 
     @property
-    def io(self) -> IO:
+    def io(self) -> Io:
         return self._io
 
-    def _ntf_cb_i2c_config_get(self, sender, data):
-        pass
     def _ntf_cb_uart_config_get(self, sender, data):
         pass
     def _ntf_cb_spi_config_get(self, sender, data):
         pass
 
-    def _ntf_cb_i2c_data_in(self, sender, data):
-        pass
     def _ntf_cb_uart_data_in(self, sender, data):
         pass
     def _ntf_cb_uart_data_send_done(self, sender, data):
