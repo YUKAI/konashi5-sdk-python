@@ -65,9 +65,9 @@ class Config(LittleEndianStructure):
             s += ", CLKPOL=1/CLKPHA=0"
         elif self.mode == Mode.MODE3:
             s += ", CLKPOL=1/CLKPHA=1"
-        if self.endian - Endian.LSB_FIRST:
+        if self.endian == Endian.LSB_FIRST:
             s += ", LSB"
-        elif self.endian - Endian.MSB_FIRST:
+        elif self.endian == Endian.MSB_FIRST:
             s += ", MSB"
         s += ", "+str(self.bitrate)
         s += ")"
