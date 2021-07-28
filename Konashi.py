@@ -78,17 +78,6 @@ class KonashiUartConfig(LittleEndianStructure):
         ('baudrate', c_uint32)
     ]
 
-class KonashiSpiConfig(LittleEndianStructure):
-    _pack_ = 1
-    _fields_ = [
-        ('mode', c_uint8, 2),
-        ('', c_uint8, 1),
-        ('endian', c_uint8, 1),
-        ('', c_uint8, 3),
-        ('enabled', c_uint8, 1),
-        ('bitrate', c_uint32)
-    ]
-
 
 
 
@@ -209,11 +198,9 @@ class Konashi:
             await self._io._on_connect()
 
             await self._ble_client.start_notify(KONASHI_UUID_UART_CONFIG_GET, self._ntf_cb_uart_config_get)
-            await self._ble_client.start_notify(KONASHI_UUID_SPI_CONFIG_GET, self._ntf_cb_spi_config_get)
 
             await self._ble_client.start_notify(KONASHI_UUID_UART_DATA_IN, self._ntf_cb_uart_data_in)
             await self._ble_client.start_notify(KONASHI_UUID_UART_DATA_SEND_DONE, self._ntf_cb_uart_data_send_done)
-            await self._ble_client.start_notify(KONASHI_UUID_SPI_DATA_IN, self._ntf_cb_spi_data_in)
 
             has_builtin = False
             srvcs = await self._ble_client.get_services()
@@ -239,14 +226,10 @@ class Konashi:
 
     def _ntf_cb_uart_config_get(self, sender, data):
         pass
-    def _ntf_cb_spi_config_get(self, sender, data):
-        pass
 
     def _ntf_cb_uart_data_in(self, sender, data):
         pass
     def _ntf_cb_uart_data_send_done(self, sender, data):
-        pass
-    def _ntf_cb_spi_data_in(self, sender, data):
         pass
 
     def _ntf_cb_builtin_temperature(self, sender, data):

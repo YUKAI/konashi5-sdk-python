@@ -7,6 +7,7 @@ from . import SoftPWM
 from . import HardPWM
 from . import Analog
 from . import I2C
+from . import SPI
 
 
 class Io:
@@ -16,6 +17,7 @@ class Io:
         self._hardpwm = HardPWM.HardPWM(konashi, self._gpio)
         self._analog = Analog.Analog(konashi)
         self._i2c = I2C.I2C(konashi, self._gpio)
+        self._spi = SPI.SPI(konashi, self._gpio)
 
     @property
     def gpio(self) -> Gpio.Gpio:
@@ -37,9 +39,14 @@ class Io:
     def i2c(self) -> I2C.I2C:
         return self._i2c
 
+    @property
+    def spi(self) -> SPI.SPI:
+        return self._spi
+
     async def _on_connect(self):
         await self._gpio._on_connect()
         await self._softpwm._on_connect()
         await self._hardpwm._on_connect()
         await self._analog._on_connect()
         await self._i2c._on_connect()
+        await self._spi._on_connect()
