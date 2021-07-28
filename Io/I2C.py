@@ -119,7 +119,7 @@ class I2C(KonashiElementBase._KonashiElementBase):
             ValueError("Maximum read length is 126 bytes")
         if address > 0x7F:
             ValueError("The I2C address should be in the range [0x01,0x7F]")
-        b = bytearray([KONASHI_CFG_CMD_I2C, operation, read_len, address]) + bytearray(write_data)
+        b = bytearray([KONASHI_CTL_CMD_I2C_DATA, operation, read_len, address]) + bytearray(write_data)
         self._async_loop = asyncio.get_event_loop()
         self._data_in_future = self._async_loop.create_future()
         await self._write(KONASHI_UUID_CONTROL_CMD, b)

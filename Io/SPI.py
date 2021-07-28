@@ -127,7 +127,7 @@ class SPI(KonashiElementBase._KonashiElementBase):
     async def transaction(self, write_data: bytes) -> bytes:
         if len(write_data) == 0:
             ValueError("Write data buffer cannot be empty")
-        b = bytearray([KONASHI_CFG_CMD_SPI]) + bytearray(write_data)
+        b = bytearray([KONASHI_CTL_CMD_SPI_DATA]) + bytearray(write_data)
         self._async_loop = asyncio.get_event_loop()
         self._data_in_future = self._async_loop.create_future()
         await self._write(KONASHI_UUID_CONTROL_CMD, b)
