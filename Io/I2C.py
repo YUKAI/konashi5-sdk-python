@@ -77,10 +77,10 @@ class I2C(KonashiElementBase._KonashiElementBase):
         self._data_in_future = None
 
     def __str__(self):
-        return f'KonashiHardPWM'
+        return f'KonashiI2C'
 
     def __repr__(self):
-        return f'KonashiHardPWM()'
+        return f'KonashiI2C()'
 
 
     async def _on_connect(self) -> None:
