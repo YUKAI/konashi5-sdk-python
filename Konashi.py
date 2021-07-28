@@ -68,17 +68,6 @@ KONASHI_UUID_BUILTIN_RGB_SET = "064d0402-8251-49d9-b6f3-f7ba35e5d0a1"
 KONASHI_UUID_BUILTIN_RGB_GET = "064d0403-8251-49d9-b6f3-f7ba35e5d0a1"
 
 
-class KonashiUartConfig(LittleEndianStructure):
-    _pack_ = 1
-    _fields_ = [
-        ('stop_bits', c_uint8, 2),
-        ('parity', c_uint8, 2),
-        ('', c_uint8, 3),
-        ('enabled', c_uint8, 1),
-        ('baudrate', c_uint32)
-    ]
-
-
 
 
 class Konashi:
@@ -197,11 +186,6 @@ class Konashi:
             await self._settings._on_connect()
             await self._io._on_connect()
 
-            await self._ble_client.start_notify(KONASHI_UUID_UART_CONFIG_GET, self._ntf_cb_uart_config_get)
-
-            await self._ble_client.start_notify(KONASHI_UUID_UART_DATA_IN, self._ntf_cb_uart_data_in)
-            await self._ble_client.start_notify(KONASHI_UUID_UART_DATA_SEND_DONE, self._ntf_cb_uart_data_send_done)
-
             has_builtin = False
             srvcs = await self._ble_client.get_services()
             for s in srvcs:
@@ -223,14 +207,6 @@ class Konashi:
     @property
     def io(self) -> Io:
         return self._io
-
-    def _ntf_cb_uart_config_get(self, sender, data):
-        pass
-
-    def _ntf_cb_uart_data_in(self, sender, data):
-        pass
-    def _ntf_cb_uart_data_send_done(self, sender, data):
-        pass
 
     def _ntf_cb_builtin_temperature(self, sender, data):
         d = struct.unpack("<h", data)
