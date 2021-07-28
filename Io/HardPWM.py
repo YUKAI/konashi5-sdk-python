@@ -203,7 +203,7 @@ class HardPWM(KonashiElementBase._KonashiElementBase):
             for i in range(KONASHI_HARDPWM_COUNT):
                 if (config[0]&(1<<i)) > 0:
                     if self._gpio._config[KONASHI_HARDPWM_PIN_TO_GPIO_NUM[i]].function != int(Gpio.PinFunction.DISABLED) and self._gpio._config[KONASHI_HARDPWM_PIN_TO_GPIO_NUM[i]].function != int(Gpio.PinFunction.PWM):
-                        raise PinUnavailableError(f'Pin {KONASHI_HARDPWM_PIN_TO_GPIO_NUM[i]} is already configured as {Gpio.KONASHI_GPIO_FUNCTION_STR[self._gpio._config[KONASHI_HARDPWM_PIN_TO_GPIO_NUM[i]].function]}')
+                        raise PinUnavailableError(f'Pin {KONASHI_HARDPWM_PIN_TO_GPIO_NUM[i]} is already configured as {Gpio._KONASHI_GPIO_FUNCTION_STR[self._gpio._config[KONASHI_HARDPWM_PIN_TO_GPIO_NUM[i]].function]}')
                     b.extend(bytearray([(i<<4)|int(config[1])]))
         await self._write(KONASHI_UUID_CONFIG_CMD, b)
 
@@ -237,7 +237,7 @@ class HardPWM(KonashiElementBase._KonashiElementBase):
             for i in range(KONASHI_HARDPWM_COUNT):
                 if (control[0]&(1<<i)) > 0:
                     if self._gpio._config[KONASHI_HARDPWM_PIN_TO_GPIO_NUM[i]].function != int(Gpio.PinFunction.PWM):
-                        raise PinUnavailableError(f'Pin {KONASHI_HARDPWM_PIN_TO_GPIO_NUM[i]} is not configured as PWM (configured as {Gpio.KONASHI_GPIO_FUNCTION_STR[self._gpio._config[KONASHI_HARDPWM_PIN_TO_GPIO_NUM[i]].function]})')
+                        raise PinUnavailableError(f'Pin {KONASHI_HARDPWM_PIN_TO_GPIO_NUM[i]} is not configured as PWM (configured as {Gpio._KONASHI_GPIO_FUNCTION_STR[self._gpio._config[KONASHI_HARDPWM_PIN_TO_GPIO_NUM[i]].function]})')
                     b.extend(bytearray([i])+bytearray(control[1]))
                     ongoing_control.append(i)
         await self._write(KONASHI_UUID_CONTROL_CMD, b)

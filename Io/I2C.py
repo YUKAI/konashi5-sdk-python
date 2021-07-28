@@ -104,9 +104,9 @@ class I2C(KonashiElementBase._KonashiElementBase):
         """
         if config.enabled:
             if self._gpio._config[KONASHI_I2C_SDA_PINNB].function != int(Gpio.PinFunction.DISABLED) and self._gpio._config[KONASHI_I2C_SDA_PINNB].function != int(Gpio.PinFunction.I2C):
-                raise PinUnavailableError(f'Pin {KONASHI_I2C_SDA_PINNB} is already configured as {Gpio.KONASHI_GPIO_FUNCTION_STR[self._gpio._config[KONASHI_I2C_SDA_PINNB].function]}')
+                raise PinUnavailableError(f'Pin {KONASHI_I2C_SDA_PINNB} is already configured as {Gpio._KONASHI_GPIO_FUNCTION_STR[self._gpio._config[KONASHI_I2C_SDA_PINNB].function]}')
             if self._gpio._config[KONASHI_I2C_SCL_PINNB].function != int(Gpio.PinFunction.DISABLED) and self._gpio._config[KONASHI_I2C_SCL_PINNB].function != int(Gpio.PinFunction.I2C):
-                raise PinUnavailableError(f'Pin {KONASHI_I2C_SCL_PINNB} is already configured as {Gpio.KONASHI_GPIO_FUNCTION_STR[self._gpio._config[KONASHI_I2C_SCL_PINNB].function]}')
+                raise PinUnavailableError(f'Pin {KONASHI_I2C_SCL_PINNB} is already configured as {Gpio._KONASHI_GPIO_FUNCTION_STR[self._gpio._config[KONASHI_I2C_SCL_PINNB].function]}')
         b = bytearray([KONASHI_CFG_CMD_I2C]) + bytearray(config)
         await self._write(KONASHI_UUID_CONFIG_CMD, b)
 

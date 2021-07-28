@@ -150,7 +150,7 @@ class SoftPWM(KonashiElementBase._KonashiElementBase):
             for i in range(KONASHI_SOFTPWM_COUNT):
                 if (config[0]&(1<<i)) > 0:
                     if self._gpio._config[KONASHI_SOFTPWM_PIN_TO_GPIO_NUM[i]].function != int(Gpio.PinFunction.DISABLED) and self._gpio._config[KONASHI_SOFTPWM_PIN_TO_GPIO_NUM[i]].function != int(Gpio.PinFunction.PWM):
-                        raise PinUnavailableError(f'Pin {KONASHI_SOFTPWM_PIN_TO_GPIO_NUM[i]} is already configured as {Gpio.KONASHI_GPIO_FUNCTION_STR[self._gpio._config[KONASHI_SOFTPWM_PIN_TO_GPIO_NUM[i]].function]}')
+                        raise PinUnavailableError(f'Pin {KONASHI_SOFTPWM_PIN_TO_GPIO_NUM[i]} is already configured as {Gpio._KONASHI_GPIO_FUNCTION_STR[self._gpio._config[KONASHI_SOFTPWM_PIN_TO_GPIO_NUM[i]].function]}')
                     b.extend(bytearray([(i<<4)|(bytes(config[1])[0])]) + bytearray(config[1])[1:3])
         await self._write(KONASHI_UUID_CONFIG_CMD, b)
 
@@ -184,7 +184,7 @@ class SoftPWM(KonashiElementBase._KonashiElementBase):
             for i in range(KONASHI_SOFTPWM_COUNT):
                 if (control[0]&(1<<i)) > 0:
                     if self._gpio._config[KONASHI_SOFTPWM_PIN_TO_GPIO_NUM[i]].function != int(Gpio.PinFunction.PWM):
-                        raise PinUnavailableError(f'Pin {KONASHI_SOFTPWM_PIN_TO_GPIO_NUM[i]} is not configured as PWM (configured as {Gpio.KONASHI_GPIO_FUNCTION_STR[self._gpio._config[KONASHI_SOFTPWM_PIN_TO_GPIO_NUM[i]].function]})')
+                        raise PinUnavailableError(f'Pin {KONASHI_SOFTPWM_PIN_TO_GPIO_NUM[i]} is not configured as PWM (configured as {Gpio._KONASHI_GPIO_FUNCTION_STR[self._gpio._config[KONASHI_SOFTPWM_PIN_TO_GPIO_NUM[i]].function]})')
                     if self._config[i].control_type == int(ControlType.DUTY):
                         if control[1].control_value < 0 or control[1].control_value > 1000:
                             raise ValueError("The valid range for the duty cycle control is [0,1000] (unit: 0.1%)")
