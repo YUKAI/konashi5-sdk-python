@@ -24,6 +24,8 @@ KONASHI_CTL_CMD_I2C_DATA = 0x05
 KONASHI_UUID_I2C_DATA_IN = "064d0308-8251-49d9-b6f3-f7ba35e5d0a1"
 
 
+KONASHI_I2C_SDA_PINNB = 6
+KONASHI_I2C_SCL_PINNB = 7
 class Mode(IntEnum):
     STANDARD = 0
     FAST = 1
@@ -57,6 +59,13 @@ class Operation(IntEnum):
     WRITE = 0
     READ = 1
     WRITE_READ = 2
+class Result(IntEnum):
+  DONE = 0  # Transfer completed successfully.
+  NACK = 1  # NACK received during transfer.
+  BUS_ERR = 2  # Bus error during transfer (misplaced START/STOP).
+  ARB_LOST = 3  # Arbitration lost during transfer.
+  USAGE_FAULT = 4  # Usage fault.
+  SW_FAULT = 5  # SW fault.
 
 
 class I2C(KonashiElementBase._KonashiElementBase):
@@ -64,8 +73,8 @@ class I2C(KonashiElementBase._KonashiElementBase):
         super().__init__(konashi)
         self._gpio = gpio
         self._config = Config(False, Mode.STANDARD)
-        self._trans_end_cb = None
-        self._ongoing_control = []
+        self._async_loop = None
+        self._data_in_future = None
 
     def __str__(self):
         return f'KonashiHardPWM'
@@ -84,7 +93,8 @@ class I2C(KonashiElementBase._KonashiElementBase):
         self._config = Config.from_buffer_copy(data)
 
     def _ntf_cb_data_in(self, sender, data):
-        pass
+        if self._async_loop is not None and self._data_in_future is not None:
+            self._async_loop.call_soon_threadsafe(self._data_in_future.set_result, data)
 
 
     async def config(self, config: Config) -> None:
@@ -92,6 +102,11 @@ class I2C(KonashiElementBase._KonashiElementBase):
         Configure the I2C peripheral.
           config: the I2C configuration
         """
+        if config.enabled:
+            if self._gpio._config[KONASHI_I2C_SDA_PINNB].function != int(Gpio.PinFunction.DISABLED) and self._gpio._config[KONASHI_I2C_SDA_PINNB].function != int(Gpio.PinFunction.I2C):
+                raise PinUnavailableError(f'Pin {KONASHI_I2C_SDA_PINNB} is already configured as {Gpio.KONASHI_GPIO_FUNCTION_STR[self._gpio._config[KONASHI_I2C_SDA_PINNB].function]}')
+            if self._gpio._config[KONASHI_I2C_SCL_PINNB].function != int(Gpio.PinFunction.DISABLED) and self._gpio._config[KONASHI_I2C_SCL_PINNB].function != int(Gpio.PinFunction.I2C):
+                raise PinUnavailableError(f'Pin {KONASHI_I2C_SCL_PINNB} is already configured as {Gpio.KONASHI_GPIO_FUNCTION_STR[self._gpio._config[KONASHI_I2C_SCL_PINNB].function]}')
         b = bytearray([KONASHI_CFG_CMD_I2C]) + bytearray(config)
         await self._write(KONASHI_UUID_CONFIG_CMD, b)
 
@@ -99,10 +114,17 @@ class I2C(KonashiElementBase._KonashiElementBase):
         await self._read(KONASHI_UUID_I2C_CONFIG_GET)
         return self._config
 
-    async def transaction(self, operation: Operation, address: int, read_len: int, write_data: bytes):
-        if read_len > 240:
-            ValueError("Maximum read length is 240 bytes")
+    async def transaction(self, operation: Operation, address: int, read_len: int, write_data: bytes) -> Tuple[Result, int, bytes]:
+        if read_len > 126:
+            ValueError("Maximum read length is 126 bytes")
         if address > 0x7F:
             ValueError("The I2C address should be in the range [0x01,0x7F]")
         b = bytearray([KONASHI_CFG_CMD_I2C, operation, read_len, address]) + bytearray(write_data)
+        self._async_loop = asyncio.get_event_loop()
+        self._data_in_future = self._async_loop.create_future()
         await self._write(KONASHI_UUID_CONTROL_CMD, b)
+        res = await self._data_in_future
+        self._async_loop = None
+        self._data_in_future = None
+        ret = (Result(res[0]), res[1], res[2:])
+        return ret
