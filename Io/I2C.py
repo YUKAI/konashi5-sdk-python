@@ -60,12 +60,12 @@ class Operation(IntEnum):
     READ = 1
     WRITE_READ = 2
 class Result(IntEnum):
-  DONE = 0  # Transfer completed successfully.
-  NACK = 1  # NACK received during transfer.
-  BUS_ERR = 2  # Bus error during transfer (misplaced START/STOP).
-  ARB_LOST = 3  # Arbitration lost during transfer.
-  USAGE_FAULT = 4  # Usage fault.
-  SW_FAULT = 5  # SW fault.
+    DONE = 0  # Transfer completed successfully.
+    NACK = 1  # NACK received during transfer.
+    BUS_ERR = 2  # Bus error during transfer (misplaced START/STOP).
+    ARB_LOST = 3  # Arbitration lost during transfer.
+    USAGE_FAULT = 4  # Usage fault.
+    SW_FAULT = 5  # SW fault.
 
 
 class I2C(KonashiElementBase._KonashiElementBase):
