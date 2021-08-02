@@ -79,7 +79,6 @@ class Konashi:
         self._settings: Settings = Settings(self)
         self._io: Io = Io(self)
         self._builtin: Builtin = Builtin(self)
-        self._builtin_presence_cb = None
         self._builtin_accelgyro_cb = None
         self._builtin_rgb_transition_end_cb = None
 
@@ -208,11 +207,6 @@ class Konashi:
     def io(self) -> Io:
         return self._io
 
-    def _ntf_cb_builtin_presence(self, sender, data):
-        d = struct.unpack("<?", data)
-        pres = d[0]
-        if self._builtin_presence_cb is not None:
-            self._builtin_presence_cb(pres)
     def _ntf_cb_builtin_accelgyro(self, sender, data):
         d = struct.unpack("<hhhhhh", data)
         accel_x = d[0] / 32768 * 8
@@ -230,18 +224,6 @@ class Konashi:
             self._builtin_rgb_transition_end_cb(color)
             self._builtin_rgb_transition_end_cb = None
 
-
-    async def builtinSetPresenceCallback(self, notify_callback: Callable[[bool], None]) -> None:
-        """
-        The callback is called with parameters:
-          presence (bool)
-        """
-        if notify_callback is not None:
-            self._builtin_presence_cb = notify_callback
-            await self._ble_client.start_notify(KONASHI_UUID_BUILTIN_PRESENCE, self._ntf_cb_builtin_presence)
-        else:
-            await self._ble_client.stop_notify(KONASHI_UUID_BUILTIN_PRESENCE)
-            self._builtin_presence_cb = None
 
     async def builtinSetAccelGyroCallback(self, notify_callback: Callable[[(float,float,float),(float,float,float)], None]) -> None:
         """

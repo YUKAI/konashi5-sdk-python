@@ -5,6 +5,7 @@ import asyncio
 from . import Temperature
 from . import Humidity
 from . import Pressure
+from . import Presence
 
 
 class Builtin:
@@ -12,7 +13,7 @@ class Builtin:
         self._temperature = Temperature.Temperature(konashi)
         self._humidity = Humidity.Humidity(konashi)
         self._pressure = Pressure.Pressure(konashi)
-        self._presence = None
+        self._presence = Presence.Presence(konashi)
         self._accelgyro = None
         self._rgbled = None
 
@@ -28,7 +29,12 @@ class Builtin:
     def pressure(self) -> Pressure.Pressure:
         return self._pressure
 
+    @property
+    def presence(self) -> Presence.Presence:
+        return self._presence
+
     async def _on_connect(self):
         await self._temperature._on_connect()
         await self._humidity._on_connect()
         await self._pressure._on_connect()
+        await self._presence._on_connect()
