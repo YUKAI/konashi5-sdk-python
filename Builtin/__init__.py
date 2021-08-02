@@ -7,6 +7,7 @@ from . import Humidity
 from . import Pressure
 from . import Presence
 from . import AccelGyro
+from . import RGBLed
 
 
 class Builtin:
@@ -16,7 +17,7 @@ class Builtin:
         self._pressure = Pressure.Pressure(konashi)
         self._presence = Presence.Presence(konashi)
         self._accelgyro = AccelGyro.AccelGyro(konashi)
-        self._rgbled = None
+        self._rgbled = RGBLed.RGBLed(konashi)
 
     @property
     def temperature(self) -> Temperature.Temperature:
@@ -38,9 +39,14 @@ class Builtin:
     def accelgyro(self) -> AccelGyro.AccelGyro:
         return self._accelgyro
 
+    @property
+    def rgbled(self) -> RGBLed.RGBLed:
+        return self._rgbled
+
     async def _on_connect(self):
         await self._temperature._on_connect()
         await self._humidity._on_connect()
         await self._pressure._on_connect()
         await self._presence._on_connect()
         await self._accelgyro._on_connect()
+        await self._rgbled._on_connect()

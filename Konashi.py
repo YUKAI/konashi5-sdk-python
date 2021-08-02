@@ -79,7 +79,6 @@ class Konashi:
         self._settings: Settings = Settings(self)
         self._io: Io = Io(self)
         self._builtin: Builtin = Builtin(self)
-        self._builtin_rgb_transition_end_cb = None
 
     def __str__(self):
         return f'Konashi {self._name} ({"Unknown" if self._ble_dev is None else self._ble_dev.address})'
@@ -182,16 +181,10 @@ class Konashi:
         if _con:
             await self._settings._on_connect()
             await self._io._on_connect()
-            await self._builtin._on_connect()
-
-            has_builtin = False
             srvcs = await self._ble_client.get_services()
             for s in srvcs:
                 if s.uuid == KONASHI_UUID_BUILTIN:
-                    has_builtin = True
-            if has_builtin:
-                print("Konashi has built-in sensors")
-                await self._ble_client.start_notify(KONASHI_UUID_BUILTIN_RGB_GET, self._ntf_cb_builtin_rgb_get)
+                    await self._builtin._on_connect()
 
     async def disconnect(self) -> None:
         if self._ble_client is not None:
@@ -205,26 +198,4 @@ class Konashi:
     @property
     def io(self) -> Io:
         return self._io
-
-    def _ntf_cb_builtin_rgb_get(self, sender, data):
-        d = struct.unpack("<ccccH", data)
-        color = (d[0],d[1],d[2],d[3])
-        if self._builtin_rgb_transition_end_cb is not None:
-            self._builtin_rgb_transition_end_cb(color)
-            self._builtin_rgb_transition_end_cb = None
-
-
-    async def builtinSetRgb(self, r: int, g: int, b: int, a: int, duration: int, transition_end_cb: Callable[[(int,int,int,int)], None] = None) -> None:
-        """
-        Set the RGB LED color.
-        r (int): Red (0~255)
-        g (int): Green (0~255)
-        b (int): Blue (0~255)
-        a (int): Alpha (0~255)
-        duration (int): duration to new color in milliseconds (0~65535)
-        """
-        b = bytearray([r&0xFF, g&0xFF, b&0xFF, a&0xFF, (duration&0x00FF), ((duration&0xFF00)>>8)])
-        await self._ble_client.write_gatt_char(KONASHI_UUID_BUILTIN_RGB_SET, b)
-        if transition_end_cb is not None:
-            self._builtin_rgb_transition_end_cb = transition_end_cb
 
