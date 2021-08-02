@@ -210,12 +210,6 @@ class Konashi:
     def io(self) -> Io:
         return self._io
 
-    def _ntf_cb_builtin_humidity(self, sender, data):
-        d = struct.unpack("<h", data)
-        hum = d[0]
-        hum /= 100
-        if self._builtin_humidity_cb is not None:
-            self._builtin_humidity_cb(hum)
     def _ntf_cb_builtin_pressure(self, sender, data):
         d = struct.unpack("<i", data)
         press = d[0]
@@ -244,18 +238,6 @@ class Konashi:
             self._builtin_rgb_transition_end_cb(color)
             self._builtin_rgb_transition_end_cb = None
 
-
-    async def builtinSetHumidityCallback(self, notify_callback: Callable[[float], None]) -> None:
-        """
-        The callback is called with parameters:
-          humidity in percent (float)
-        """
-        if notify_callback is not None:
-            self._builtin_humidity_cb = notify_callback
-            await self._ble_client.start_notify(KONASHI_UUID_BUILTIN_HUMIDITY, self._ntf_cb_builtin_humidity)
-        else:
-            await self._ble_client.stop_notify(KONASHI_UUID_BUILTIN_HUMIDITY)
-            self._builtin_humidity_cb = None
 
     async def builtinSetPressureCallback(self, notify_callback: Callable[[float], None]) -> None:
         """
