@@ -12,6 +12,7 @@ from bleak import *
 
 from .Settings import Settings
 from .Io import Io
+from .Builtin import Builtin
 from .Errors import *
 
 
@@ -77,7 +78,7 @@ class Konashi:
         self._ble_client = None
         self._settings: Settings = Settings(self)
         self._io: Io = Io(self)
-        self._builtin_temperature_cb = None
+        self._builtin: Builtin = Builtin(self)
         self._builtin_humidity_cb = None
         self._builtin_pressure_cb = None
         self._builtin_presence_cb = None
@@ -185,6 +186,7 @@ class Konashi:
         if _con:
             await self._settings._on_connect()
             await self._io._on_connect()
+            await self._builtin._on_connect()
 
             has_builtin = False
             srvcs = await self._ble_client.get_services()
@@ -208,12 +210,6 @@ class Konashi:
     def io(self) -> Io:
         return self._io
 
-    def _ntf_cb_builtin_temperature(self, sender, data):
-        d = struct.unpack("<h", data)
-        temp = d[0]
-        temp /= 100
-        if self._builtin_temperature_cb is not None:
-            self._builtin_temperature_cb(temp)
     def _ntf_cb_builtin_humidity(self, sender, data):
         d = struct.unpack("<h", data)
         hum = d[0]
@@ -248,18 +244,6 @@ class Konashi:
             self._builtin_rgb_transition_end_cb(color)
             self._builtin_rgb_transition_end_cb = None
 
-
-    async def builtinSetTemperatureCallback(self, notify_callback: Callable[[float], None]) -> None:
-        """
-        The callback is called with parameters:
-          temperature in degrees Celsius (float)
-        """
-        if notify_callback is not None:
-            self._builtin_temperature_cb = notify_callback
-            await self._ble_client.start_notify(KONASHI_UUID_BUILTIN_TEMPERATURE, self._ntf_cb_builtin_temperature)
-        else:
-            await self._ble_client.stop_notify(KONASHI_UUID_BUILTIN_TEMPERATURE)
-            self._builtin_temperature_cb = None
 
     async def builtinSetHumidityCallback(self, notify_callback: Callable[[float], None]) -> None:
         """
