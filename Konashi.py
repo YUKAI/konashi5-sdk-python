@@ -79,7 +79,6 @@ class Konashi:
         self._settings: Settings = Settings(self)
         self._io: Io = Io(self)
         self._builtin: Builtin = Builtin(self)
-        self._builtin_accelgyro_cb = None
         self._builtin_rgb_transition_end_cb = None
 
     def __str__(self):
@@ -207,16 +206,6 @@ class Konashi:
     def io(self) -> Io:
         return self._io
 
-    def _ntf_cb_builtin_accelgyro(self, sender, data):
-        d = struct.unpack("<hhhhhh", data)
-        accel_x = d[0] / 32768 * 8
-        accel_y = d[1] / 32768 * 8
-        accel_z = d[2] / 32768 * 8
-        gyro_x = d[3] / 32768 * 1000
-        gyro_y = d[4] / 32768 * 1000
-        gyro_z = d[5] / 32768 * 1000
-        if self._builtin_accelgyro_cb is not None:
-            self._builtin_accelgyro_cb((accel_x,accel_y,accel_z),(gyro_x,gyro_y,gyro_z))
     def _ntf_cb_builtin_rgb_get(self, sender, data):
         d = struct.unpack("<ccccH", data)
         color = (d[0],d[1],d[2],d[3])
@@ -224,19 +213,6 @@ class Konashi:
             self._builtin_rgb_transition_end_cb(color)
             self._builtin_rgb_transition_end_cb = None
 
-
-    async def builtinSetAccelGyroCallback(self, notify_callback: Callable[[(float,float,float),(float,float,float)], None]) -> None:
-        """
-        The callback is called with parameters:
-          accel in g (Tuple(float,float,float))
-          gyro in degrees per second (Tuple(float,float,float))
-        """
-        if notify_callback is not None:
-            self._builtin_accelgyro_cb = notify_callback
-            await self._ble_client.start_notify(KONASHI_UUID_BUILTIN_ACCELGYRO, self._ntf_cb_builtin_accelgyro)
-        else:
-            await self._ble_client.stop_notify(KONASHI_UUID_BUILTIN_ACCELGYRO)
-            self._builtin_accelgyro_cb = None
 
     async def builtinSetRgb(self, r: int, g: int, b: int, a: int, duration: int, transition_end_cb: Callable[[(int,int,int,int)], None] = None) -> None:
         """
