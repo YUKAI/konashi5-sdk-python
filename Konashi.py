@@ -79,8 +79,6 @@ class Konashi:
         self._settings: Settings = Settings(self)
         self._io: Io = Io(self)
         self._builtin: Builtin = Builtin(self)
-        self._builtin_humidity_cb = None
-        self._builtin_pressure_cb = None
         self._builtin_presence_cb = None
         self._builtin_accelgyro_cb = None
         self._builtin_rgb_transition_end_cb = None
@@ -210,12 +208,6 @@ class Konashi:
     def io(self) -> Io:
         return self._io
 
-    def _ntf_cb_builtin_pressure(self, sender, data):
-        d = struct.unpack("<i", data)
-        press = d[0]
-        press /= 1000
-        if self._builtin_pressure_cb is not None:
-            self._builtin_pressure_cb(press)
     def _ntf_cb_builtin_presence(self, sender, data):
         d = struct.unpack("<?", data)
         pres = d[0]
@@ -238,18 +230,6 @@ class Konashi:
             self._builtin_rgb_transition_end_cb(color)
             self._builtin_rgb_transition_end_cb = None
 
-
-    async def builtinSetPressureCallback(self, notify_callback: Callable[[float], None]) -> None:
-        """
-        The callback is called with parameters:
-          pressure in hectopascal (float)
-        """
-        if notify_callback is not None:
-            self._builtin_pressure_cb = notify_callback
-            await self._ble_client.start_notify(KONASHI_UUID_BUILTIN_PRESSURE, self._ntf_cb_builtin_pressure)
-        else:
-            await self._ble_client.stop_notify(KONASHI_UUID_BUILTIN_PRESSURE)
-            self._builtin_pressure_cb = None
 
     async def builtinSetPresenceCallback(self, notify_callback: Callable[[bool], None]) -> None:
         """
