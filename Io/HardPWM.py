@@ -115,8 +115,7 @@ class PinControl(LittleEndianStructure):
         self.transition_duration = transition_duration
     def __str__(self):
         s = "KonashiHardPWMPinControl("
-        if self.control_type is None:
-            s += "Control value "+str(self.control_value)+", Transition duration "+str(self.transition_duration)+"ms"
+        s += "Control value "+str(self.control_value)+", Transition duration "+str(self.transition_duration)+"ms"
         s += ")"
         return s
 _PinsControl = PinControl*KONASHI_HARDPWM_COUNT
@@ -252,7 +251,7 @@ class HardPWM(KonashiElementBase._KonashiElementBase):
         """
         Get a list of current HardPWM output control for the pins specified in the bitmask.
         """
-        await self._ble_client.read_gatt_char(KONASHI_UUID_HARDPWM_OUTPUT_GET)
+        await self._read(KONASHI_UUID_HARDPWM_OUTPUT_GET)
         l = []
         for i in range(KONASHI_HARDPWM_COUNT):
             if (pin_bitmask&(1<<i)) > 0:

@@ -31,7 +31,7 @@ class RGBLed(KonashiElementBase._KonashiElementBase):
 
 
     async def _on_connect(self) -> None:
-        await self._ble_client.start_notify(KONASHI_UUID_BUILTIN_RGB_GET, self._ntf_cb)
+        await self._enable_notify(KONASHI_UUID_BUILTIN_RGB_GET, self._ntf_cb)
 
 
     def _ntf_cb(self, sender, data):
@@ -52,6 +52,6 @@ class RGBLed(KonashiElementBase._KonashiElementBase):
         duration (int): duration to new color in milliseconds (0~65535)
         """
         b = bytearray([r&0xFF, g&0xFF, b&0xFF, a&0xFF, (duration&0x00FF), ((duration&0xFF00)>>8)])
-        await self._ble_client.write_gatt_char(KONASHI_UUID_BUILTIN_RGB_SET, b)
+        await self.write(KONASHI_UUID_BUILTIN_RGB_SET, b)
         if callback is not None:
             self._cb = callback

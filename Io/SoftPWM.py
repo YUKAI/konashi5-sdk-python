@@ -69,6 +69,8 @@ _PinsConfig = PinConfig*KONASHI_SOFTPWM_COUNT
 class PinControl(LittleEndianStructure):
     _pack_ = 1
     _fields_ = [
+        ('control_type', c_uint8, 4),
+        ('', c_uint8, 4),
         ('control_value', c_uint16),
         ('transition_duration', c_uint32)
     ]
@@ -85,21 +87,18 @@ class PinControl(LittleEndianStructure):
             raise ValueError("The valid range for the transition duration is [0,4294967295] (unit: 1ms)")
         self.control_value = control_value
         self.transition_duration = transition_duration
-        self.control_type = None
+        self.control_type = 0
     def __str__(self):
         s = "KonashiSoftPWMPinControl("
-        if self.control_type is None:
-            s += "Control value "+str(self.control_value)+" raw, Transition duration "+str(self.transition_duration)+"ms"
+        if self.control_type == ControlType.DISABLED:
+            s += "DISABLED, Control value "+str(self.control_value)+" raw, Transition duration "+str(self.transition_duration)+"ms"
         else:
-            if self.control_type == ControlType.DISABLED:
-                s += "DISABLED"
+            s += str(int(self.control_value*0.1))
+            if self.control_type == ControlType.PERIOD:
+                s += "ms period"
             else:
-                s += int(self.control_value*0.1)
-                if self.control_type == ControlType.PERIOD:
-                    s += "ms period"
-                else:
-                    s += r"% duty cycle"
-                s += ", Transition duration "+str(self.transition_duration)+"ms"
+                s += r"% duty cycle"
+            s += ", Transition duration "+str(self.transition_duration)+"ms"
         s += ")"
         return s
 _PinsControl = PinControl*KONASHI_SOFTPWM_COUNT
@@ -193,7 +192,7 @@ class SoftPWM(KonashiElementBase._KonashiElementBase):
                             raise ValueError("The valid range for the period control is [0,65535] (unit: 1ms)")
                     else:
                         raise PinUnavailableError(f'SoftPWM{i} is not enabled')
-                    b.extend(bytearray([i])+bytearray(control[1]))
+                    b.extend(bytearray([i])+(bytearray(control[1])[1:]))
                     ongoing_control.append(i)
         await self._write(KONASHI_UUID_CONTROL_CMD, b)
         for i in ongoing_control:
@@ -204,11 +203,9 @@ class SoftPWM(KonashiElementBase._KonashiElementBase):
         """
         Get a list of current SoftPWM output control for the pins specified in the bitmask.
         """
-        await self._ble_client.read_gatt_char(KONASHI_UUID_SOFTPWM_OUTPUT_GET)
+        await self._read(KONASHI_UUID_SOFTPWM_OUTPUT_GET)
         l = []
         for i in range(KONASHI_SOFTPWM_COUNT):
             if (pin_bitmask&(1<<i)) > 0:
-                ctrl = self._output[i]
-                ctrl.control_type = self._config[i].control_type
-                l.append(ctrl)
+                l.append(self._output[i])
         return l

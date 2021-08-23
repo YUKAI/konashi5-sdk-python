@@ -57,11 +57,9 @@ class PinConfig(LittleEndianStructure):
     ]
     def __init__(self, enabled: bool, direction: PinDirection=PinDirection.INPUT, send_on_change: bool=True):
         """
+        enable (bool): if true enable the pin, otherwise disable
         direction (PinDirection): the pin direction
         send_on_change (bool): if true, a notification is sent on pin level change
-        pull_down (bool): if true, activate the pull down resistor
-        pull_up (bool): if true, activate the pull up resistor
-        wired_function (PinWiredFunction): use the pin in a wired function mode
         """
         self.enabled = enabled
         self.send_on_change = send_on_change
@@ -113,14 +111,26 @@ class _PinOut(LittleEndianStructure):
         ('valid', c_uint8),
         ('control', PinControl)
     ]
-_PinsOut = _PinOut*KONASHI_AIO_COUNT
+class _PinsOut(LittleEndianStructure):
+    _pack_ = 1
+    _fields_ = [
+        ('idac_current_step', c_uint8, 4),
+        ('vdac_voltage_reference', c_uint8, 4),
+        ('pin', _PinOut*KONASHI_AIO_COUNT)
+    ]
 class _PinIn(LittleEndianStructure):
     _pack_ = 1
     _fields_ = [
         ('valid', c_uint8),
         ('value', c_uint16)
     ]
-_PinsIn = _PinIn*KONASHI_AIO_COUNT
+class _PinsIn(LittleEndianStructure):
+    _pack_ = 1
+    _fields_ = [
+        ('adc_voltage_reference', c_uint8, 4),
+        ('', c_uint8, 4),
+        ('pin', _PinIn*KONASHI_AIO_COUNT)
+    ]
 
 
 class Analog(KonashiElementBase._KonashiElementBase):
@@ -156,10 +166,10 @@ class Analog(KonashiElementBase._KonashiElementBase):
     def _ntf_cb_input(self, sender, data):
         _new_input = _PinsIn.from_buffer_copy(data)
         for i in range(KONASHI_AIO_COUNT):
-            if _new_input[i].valid:
-                if _new_input[i].value != self._input[i].value:
+            if _new_input.pin[i].valid:
+                if _new_input.pin[i].value != self._input.pin[i].value:
                     if self._input_cb is not None:
-                        self._input_cb(i, _new_input[i].value)
+                        self._input_cb(i, _new_input.pin[i].value)
         self._input = _new_input
 
 
@@ -189,15 +199,15 @@ class Analog(KonashiElementBase._KonashiElementBase):
         await self._write(KONASHI_UUID_CONFIG_CMD, b)
 
     async def config_adc_ref(self, ref: AdcRef) -> None:
-        b = bytearray([KONASHI_CFG_CMD_ANALOG, 0xE|(ref&0x0F)])
+        b = bytearray([KONASHI_CFG_CMD_ANALOG, 0xE0|(ref&0x0F)])
         await self._write(KONASHI_UUID_CONFIG_CMD, b)
 
     async def config_vdac_ref(self, ref: VdacRef) -> None:
-        b = bytearray([KONASHI_CFG_CMD_ANALOG, 0xD|(ref&0x0F)])
+        b = bytearray([KONASHI_CFG_CMD_ANALOG, 0xD0|(ref&0x0F)])
         await self._write(KONASHI_UUID_CONFIG_CMD, b)
 
     async def config_idac_range(self, range: IdacRange) -> None:
-        b = bytearray([KONASHI_CFG_CMD_ANALOG, 0xC|(range&0x0F)])
+        b = bytearray([KONASHI_CFG_CMD_ANALOG, 0xC0|(range&0x0F)])
         await self._write(KONASHI_UUID_CONFIG_CMD, b)
 
     async def get_analog_config(self) -> AnalogConfig:
@@ -293,10 +303,10 @@ class Analog(KonashiElementBase._KonashiElementBase):
         l = []
         for i in range(KONASHI_AIO_COUNT):
             if (pin_bitmask&(1<<i)) > 0:
-                if not self._output[i].valid:
+                if not self._output.pin[i].valid:
                     l.append(None)
                 else:
-                    l.append(self._output[i].control)
+                    l.append(self._output.pin[i].control)
         return l
 
     async def read_pins(self, pin_bitmask: int) -> List[int]:
@@ -307,8 +317,8 @@ class Analog(KonashiElementBase._KonashiElementBase):
         l = []
         for i in range(KONASHI_AIO_COUNT):
             if (pin_bitmask&(1<<i)) > 0:
-                if not self._input[i].valid:
+                if not self._input.pin[i].valid:
                     l.append(None)
                 else:
-                    l.append(self._calc_voltage_for_value(self._input[i].value))
+                    l.append(self._calc_voltage_for_value(self._input.pin[i].value))
         return l
