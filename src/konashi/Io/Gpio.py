@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import struct
+import logging
 from ctypes import *
 from typing import *
 from enum import *
@@ -12,6 +13,9 @@ from bleak import *
 
 from .. import KonashiElementBase
 from ..Errors import *
+
+
+logger = logging.getLogger("Konashi.Io.Gpio")
 
 
 KONASHI_UUID_CONFIG_CMD = "064d0201-8251-49d9-b6f3-f7ba35e5d0a1"
@@ -32,19 +36,13 @@ class PinFunction(IntEnum):
     PWM = 2
     I2C = 3
     SPI = 4
-    def __int__(self):
-        return self.value
 class PinDirection(IntEnum):
     INPUT = 0
     OUTPUT = 1
-    def __int__(self):
-        return self.value
 class PinWiredFunction(IntEnum):
     DISABLED = 0
     OPEN_DRAIN = 1
     OPEN_SOURCE = 2
-    def __int__(self):
-        return self.value
 class PinConfig(LittleEndianStructure):
     _pack_ = 1
     _fields_ = [
@@ -58,13 +56,6 @@ class PinConfig(LittleEndianStructure):
         ('', c_uint8, 2)
     ]
     def __init__(self, direction: PinDirection=PinDirection.INPUT, send_on_change: bool=True, pull_down: bool=False, pull_up: bool=False, wired_fct: PinWiredFunction=PinWiredFunction.DISABLED):
-        """
-        direction (PinDirection): the pin direction
-        send_on_change (bool): if true, a notification is sent on pin level change
-        pull_down (bool): if true, activate the pull down resistor
-        pull_up (bool): if true, activate the pull up resistor
-        wired_function (PinWiredFunction): use the pin in a wired function mode
-        """
         self.direction = direction
         self.send_on_change = send_on_change
         self.pull_down = pull_down
@@ -89,18 +80,14 @@ class PinConfig(LittleEndianStructure):
         return s
 _PinsConfig = PinConfig*KONASHI_GPIO_COUNT
 
-class PinControl(Enum):
+class PinControl(IntEnum):
     LOW = 0
     HIGH = 1
     TOGGLE = 2
-    def __int__(self):
-        return self.value
-class PinLevel(Enum):
+class PinLevel(IntEnum):
     LOW = 0
     HIGH = 1
     INVALID = 2
-    def __int__(self):
-        return self.value
 class _PinIO(LittleEndianStructure):
     _pack_ = 1
     _fields_ = [
@@ -112,7 +99,7 @@ class _PinIO(LittleEndianStructure):
 _PinsIO = _PinIO*KONASHI_GPIO_COUNT
 
 
-class Gpio(KonashiElementBase._KonashiElementBase):
+class _Gpio(KonashiElementBase._KonashiElementBase):
     def __init__(self, konashi) -> None:
         super().__init__(konashi)
         self._config = _PinsConfig()
@@ -137,12 +124,15 @@ class Gpio(KonashiElementBase._KonashiElementBase):
         
 
     def _ntf_cb_config(self, sender, data):
+        logger.debug("Received config data: {}".format("".join("{:02x}".format(x) for x in data)))
         self._config = _PinsConfig.from_buffer_copy(data)
 
     def _ntf_cb_output(self, sender, data):
+        logger.debug("Received output data: {}".format("".join("{:02x}".format(x) for x in data)))
         self._output = _PinsIO.from_buffer_copy(data)
 
     def _ntf_cb_input(self, sender, data):
+        logger.debug("Received input data: {}".format("".join("{:02x}".format(x) for x in data)))
         for i in range(KONASHI_GPIO_COUNT):
             if data[i]&0x10:
                 val = data[i]&0x01
@@ -154,10 +144,20 @@ class Gpio(KonashiElementBase._KonashiElementBase):
 
     async def config_pins(self, configs: Sequence(Tuple[int, bool, PinConfig])) -> None:
         """
-        Specify a list of configurations in the format (pin_bitmask, enable, config) with:
-          pin_bitmask (int): a bitmask of the pins to apply this configuration to
-          enable (bool): enable or disable the specified pins
-          config (PinConfig): the configuration for the specified pins
+        Configure pins.
+
+        Parameters
+        ----------
+        configs : list of tuples of int, bool, PinConfig
+            The list of configurations to set. For each tuple:
+            int: pin bitmask. A bitmask of the pins to apply this configuration to.
+            bool: enable. Enable or disable the pins specified in the bitmask.
+            config: PinConfig. The configuration for the pins specified in the bitmask when enabling.
+
+        Raises
+        ------
+        PinUnavailableError
+            If a pin is already configured with a function other than GPIO.
         """
         b = bytearray([KONASHI_CFG_CMD_GPIO])
         for config in configs:
@@ -169,9 +169,7 @@ class Gpio(KonashiElementBase._KonashiElementBase):
         await self._write(KONASHI_UUID_CONFIG_CMD, b)
 
     async def get_pins_config(self, pin_bitmask: int) -> List[PinConfig]:
-        """
-        Get a list of current GPIO configurations for the pins specified in the bitmask.
-        """
+        """Returns a list of configurations for the pins specified in the bitmask."""
         await self._read(KONASHI_UUID_GPIO_CONFIG_GET)
         l = []
         for i in range(KONASHI_GPIO_COUNT):
@@ -181,17 +179,34 @@ class Gpio(KonashiElementBase._KonashiElementBase):
 
     def set_input_cb(self, notify_callback: Callable[[int, int], None]) -> None:
         """
-        The callback is called with parameters:
-          pin (int)
-          value (int)
+        Set a GPIO input callback function.
+        The function will be called when GPIO input is changed.
+
+        Parameters
+        ----------
+        notify_callback : callable
+            The input callback function.
+            The function takes 2 parameters and returns nothing:
+                pin: int. The pin number.
+                value: int. The pin value.
         """
         self._input_cb = notify_callback
 
     async def control_pins(self, controls: Sequence(Tuple[int, PinControl])) -> None:
         """
-        Specify a list of controls in the format (pin, control) with:
-          pin (int): a bitmask of the pins to apply this control to
-          control (PinControl): the control for the specified pins
+        Configure pins.
+
+        Parameters
+        ----------
+        configs : list of tuples of int, PinControl
+            The list of controls to set. For each tuple:
+            int: pin bitmask. A bitmask of the pins to apply this control to.
+            control: PinControl. The control for the pins specified in the bitmask.
+
+        Raises
+        ------
+        PinUnavailableError
+            If a pin is not configured with the GPIO function.
         """
         b = bytearray([KONASHI_CTL_CMD_GPIO])
         for control in controls:
@@ -203,9 +218,7 @@ class Gpio(KonashiElementBase._KonashiElementBase):
         await self._write(KONASHI_UUID_CONFIG_CMD, b)
 
     async def get_pins_control(self, pin_bitmask: int) -> List[PinLevel]:
-        """
-        Get a list of current GPIO output levels for the pins specified in the bitmask.
-        """
+        """Returns a list of output levels for the pins specified in the bitmask."""
         await self._read(KONASHI_UUID_GPIO_OUTPUT_GET)
         l = []
         for i in range(KONASHI_GPIO_COUNT):
@@ -217,9 +230,7 @@ class Gpio(KonashiElementBase._KonashiElementBase):
         return l
 
     async def read_pins(self, pin_bitmask: int) -> List[PinLevel]:
-        """
-        Get a list of current GPIO input levels for the pins specified in the bitmask.
-        """
+        """Returns a list of input levels for the pins specified in the bitmask."""
         await self._read(KONASHI_UUID_GPIO_INPUT)
         l = []
         for i in range(KONASHI_GPIO_COUNT):
