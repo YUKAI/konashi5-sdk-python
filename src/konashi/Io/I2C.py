@@ -145,6 +145,15 @@ class _I2C(KonashiElementBase._KonashiElementBase):
         write_data : bytes
             The data to write (length range: 0 ~ 124).
 
+        Returns
+        -------
+        result : Result
+            The operation result.
+        address : int
+            The slave address.
+        data : bytes
+            The read data.
+
         Raises
         ------
         ValueError
