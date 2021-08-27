@@ -14,7 +14,7 @@ from . import SPI
 class Io:
     def __init__(self, konashi):
         self._gpio = Gpio._Gpio(konashi)
-        self._softpwm = SoftPWM.SoftPWM(konashi, self._gpio)
+        self._softpwm = SoftPWM._SoftPWM(konashi, self._gpio)
         self._hardpwm = HardPWM.HardPWM(konashi, self._gpio)
         self._analog = Analog.Analog(konashi)
         self._i2c = I2C.I2C(konashi, self._gpio)
@@ -26,7 +26,7 @@ class Io:
         return self._gpio
 
     @property
-    def softpwm(self) -> SoftPWM.SoftPWM:
+    def softpwm(self) -> SoftPWM._SoftPWM:
         return self._softpwm
 
     @property
