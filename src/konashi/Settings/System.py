@@ -27,11 +27,11 @@ class _Command(IntEnum):
     FCT_BTN_EMULATE_LONG_PRESS = 6
     FCT_BTN_EMULATE_VERY_LONG_PRESS = 7
 class NvmUse(IntEnum):
-    DISABLED = 0
-    ENABLED = 1
+    DISABLED = 0  ## Disable NVM use.
+    ENABLED = 1  ## Enable NVM use.
 class NvmSaveTrigger(IntEnum):
-    AUTO = 0
-    MANUAL = 1
+    AUTO = 0  ## Automatically save to NVM on config change.
+    MANUAL = 1  ## Manually save to NVM.
 class Settings(LittleEndianStructure):
     _pack_ = 1
     _fields_ = [
@@ -78,33 +78,41 @@ class System(KonashiElementBase._KonashiElementBase):
 
 
     async def get_settings(self) -> Settings:
+        """Get current system settings."""
         await self._read(KONASHI_UUID_SYSTEM_SETTINGS_GET)
         return self._settings
 
     async def set_nvm_use(self, enable: bool) -> None:
+        """Enable or disable NVM usage."""
         b = bytearray([KONASHI_SET_CMD_SYSTEM, _Command.NVM_USE_SET, enable])
         await self._write(KONASHI_UUID_SETTINGS_CMD, b)
 
     async def set_nvm_save_trigger(self, trigger: NvmSaveTrigger) -> None:
+        """Set NVM save trigger."""
         b = bytearray([KONASHI_SET_CMD_SYSTEM, _Command.NVM_SAVE_TRIGGER_SET, trigger])
         await self._write(KONASHI_UUID_SETTINGS_CMD, b)
 
     async def nvm_save_now(self) -> None:
+        """Save all to NVM now."""
         b = bytearray([KONASHI_SET_CMD_SYSTEM, _Command.NVM_SAVE_NOW])
         await self._write(KONASHI_UUID_SETTINGS_CMD, b)
 
     async def nvm_erase_now(self) -> None:
+        """Erase all from NVM now."""
         b = bytearray([KONASHI_SET_CMD_SYSTEM, _Command.NVM_ERASE_NOW])
         await self._write(KONASHI_UUID_SETTINGS_CMD, b)
 
     async def emul_press(self) -> None:
+        """Emulate a function button simple press."""
         b = bytearray([KONASHI_SET_CMD_SYSTEM, _Command.FCT_BTN_EMULATE_PRESS])
         await self._write(KONASHI_UUID_SETTINGS_CMD, b)
 
     async def emul_long_press(self) -> None:
+        """Emulate a function button long press."""
         b = bytearray([KONASHI_SET_CMD_SYSTEM, _Command.FCT_BTN_EMULATE_LONG_PRESS])
         await self._write(KONASHI_UUID_SETTINGS_CMD, b)
 
     async def emul_very_long_press(self) -> None:
+        """Emulate a function button very long press."""
         b = bytearray([KONASHI_SET_CMD_SYSTEM, _Command.FCT_BTN_EMULATE_VERY_LONG_PRESS])
         await self._write(KONASHI_UUID_SETTINGS_CMD, b)

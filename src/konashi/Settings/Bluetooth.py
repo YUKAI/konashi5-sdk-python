@@ -117,25 +117,31 @@ class Bluetooth(KonashiElementBase._KonashiElementBase):
 
 
     async def get_settings(self) -> Settings:
+        """Get current bluetooth settings."""
         await self._read(KONASHI_UUID_BLUETOOTH_SETTINGS_GET)
         return self._settings
 
     async def enable_function(self, function: Function, enable: bool) -> None:
+        """Enable or disable a Bluetooth functionality."""
         b = bytearray([KONASHI_SET_CMD_BLUETOOTH, (function<<4)+enable])
         await self._write(KONASHI_UUID_SETTINGS_CMD, b)
 
     async def set_main_adv_sec_phy(self, phy: SecondaryPhy) -> None:
+        """Set the main advertiser Secondary PHY."""
         b = bytearray([KONASHI_SET_CMD_BLUETOOTH, 0xF0+phy])
         await self._write(KONASHI_UUID_SETTINGS_CMD, b)
 
     async def set_main_preferred_conn_phy(self, phy: ConnectionPhy) -> None:
+        """Set the main Preferred Connection PHY."""
         b = bytearray([KONASHI_SET_CMD_BLUETOOTH, 0xE0+phy])
         await self._write(KONASHI_UUID_SETTINGS_CMD, b)
 
     async def set_ex_adv_phy(self, prim_phy: PrimaryPhy, sec_phy: SecondaryPhy) -> None:
+        """Set the extra advertiser Primary and Secondary PHYs."""
         b = bytearray([KONASHI_SET_CMD_BLUETOOTH, 0xD0+prim_phy, 0xC0+sec_phy])
         await self._write(KONASHI_UUID_SETTINGS_CMD, b)
 
     async def set_ex_adv_contents(self, contents: ExAdvertiseContents) -> None:
+        """Set the extra advertiser contents."""
         b = bytearray([KONASHI_SET_CMD_BLUETOOTH, 0xB0+((contents>>24)&0x0F), (contents>>16)&0xFF, (contents>>8)&0xFF, (contents>>0)&0xFF])
         await self._write(KONASHI_UUID_SETTINGS_CMD, b)

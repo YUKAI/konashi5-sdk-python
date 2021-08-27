@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import struct
+import logging
 from ctypes import *
 from typing import *
 from enum import *
@@ -14,6 +15,9 @@ from bleak import *
 from .Errors import *
 
 
+logger = logging.getLogger("KonashiElement")
+
+
 class _KonashiElementBase:
     def __init__(self, konashi):
         self._konashi = konashi
@@ -22,6 +26,7 @@ class _KonashiElementBase:
         if self._konashi._ble_client is None:
             raise KonashiError(f'Connection is not established')
         try:
+            logger.debug("Read from {}".format(uuid))
             await self._konashi._ble_client.read_gatt_char(uuid)
         except BleakError as e:
             raise KonashiError(f'Error occured during BLE read: "{str(e)}"')
@@ -30,6 +35,7 @@ class _KonashiElementBase:
         if self._konashi._ble_client is None:
             raise KonashiError(f'Connection is not established')
         try:
+            logger.debug("Write to {}: {}".format(uuid, "".join("{:02x}".format(x) for x in data)))
             await self._konashi._ble_client.write_gatt_char(uuid, data)
         except BleakError as e:
             raise KonashiError(f'Error occured during BLE write: "{str(e)}"')
@@ -38,6 +44,7 @@ class _KonashiElementBase:
         if self._konashi._ble_client is None:
             raise KonashiError(f'Connection is not established')
         try:
+            logger.debug("Enable notify for {}".format(uuid))
             await self._konashi._ble_client.start_notify(uuid, cb)
         except BleakError as e:
             raise KonashiError(f'Error occured during BLE notify start: "{str(e)}"')
@@ -46,6 +53,7 @@ class _KonashiElementBase:
         if self._konashi._ble_client is None:
             raise KonashiError(f'Connection is not established')
         try:
+            logger.debug("Disable notify for {}".format(uuid))
             await self._konashi._ble_client.stop_notify(uuid)
         except BleakError as e:
             raise KonashiError(f'Error occured during BLE notify stop: "{str(e)}"')
