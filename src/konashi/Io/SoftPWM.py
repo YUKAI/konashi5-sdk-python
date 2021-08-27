@@ -95,7 +95,7 @@ class PinControl(LittleEndianStructure):
             The control value to apply to the pin.
             If the control type for the pin is DUTY, this is the duty cycle control value in units of 0.1% (valid range: [0,1000]).
             if the control type for the pin is PERIOD, this is the period control value in units of 1ms (valid range: [0,65535]).
-        transition_duration : int
+        transition_duration : int, optional
             Duration to reach the target value in untis of 1ms (valid range: [0,4294967295]).
 
         Raises
@@ -218,7 +218,7 @@ class _SoftPWM(KonashiElementBase._KonashiElementBase):
         ----------
         controls : list of tuples of int, PinControl
             The list of controls to set. For each tuple:
-            int: pin bitmask. A bitmask of the pins to apply this control to.
+            int: pin bitmask. A bitmask of the pins to apply this control to (range 0x00 to 0x0F).
             control: PinControl. The control for the pins specified in the bitmask.
 
         Raises
