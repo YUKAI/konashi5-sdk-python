@@ -4,6 +4,9 @@
 class KonashiError(Exception):
     pass
 
+class KonashiConnectionError(Exception):
+    pass
+
 class NotFoundError(Exception):
     pass
 
