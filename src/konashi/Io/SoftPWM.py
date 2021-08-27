@@ -171,7 +171,7 @@ class _SoftPWM(KonashiElementBase._KonashiElementBase):
         configs : list of tuples of int, PinConfig
             The list of configurations to set. For each tuple:
             int: pin bitmask. A bitmask of the pins to apply this configuration to (range 0x00 to 0x0F).
-            config: PinConfig. The configuration for the pins specified in the bitmask.
+            PinConfig: config. The configuration for the pins specified in the bitmask.
 
         Raises
         ------
@@ -219,7 +219,7 @@ class _SoftPWM(KonashiElementBase._KonashiElementBase):
         controls : list of tuples of int, PinControl
             The list of controls to set. For each tuple:
             int: pin bitmask. A bitmask of the pins to apply this control to (range 0x00 to 0x0F).
-            control: PinControl. The control for the pins specified in the bitmask.
+            PinControl: control. The control for the pins specified in the bitmask.
 
         Raises
         ------

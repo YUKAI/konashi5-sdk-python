@@ -152,7 +152,7 @@ class _Gpio(KonashiElementBase._KonashiElementBase):
             The list of configurations to set. For each tuple:
             int: pin bitmask. A bitmask of the pins to apply this configuration to (range 0x00 to 0xFF).
             bool: enable. Enable or disable the pins specified in the bitmask.
-            config: PinConfig. The configuration for the pins specified in the bitmask when enabling.
+            PinConfig: config. The configuration for the pins specified in the bitmask when enabling.
 
         Raises
         ------
@@ -201,7 +201,7 @@ class _Gpio(KonashiElementBase._KonashiElementBase):
         controls : list of tuples of int, PinControl
             The list of controls to set. For each tuple:
             int: pin bitmask. A bitmask of the pins to apply this control to.
-            control: PinControl. The control for the pins specified in the bitmask.
+            PinControl: control. The control for the pins specified in the bitmask.
 
         Raises
         ------
