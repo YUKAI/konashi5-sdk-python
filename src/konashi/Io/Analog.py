@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import struct
+import logging
 from ctypes import *
 from typing import *
 from enum import *
@@ -12,6 +13,9 @@ from bleak import *
 
 from .. import KonashiElementBase
 from ..Errors import *
+
+
+logger = logging.getLogger("Konashi.Io.Analog")
 
 
 KONASHI_UUID_CONFIG_CMD = "064d0201-8251-49d9-b6f3-f7ba35e5d0a1"
@@ -57,9 +61,14 @@ class PinConfig(LittleEndianStructure):
     ]
     def __init__(self, enabled: bool, direction: PinDirection=PinDirection.INPUT, send_on_change: bool=True):
         """
-        enable (bool): if true enable the pin, otherwise disable
-        direction (PinDirection): the pin direction
-        send_on_change (bool): if true, a notification is sent on pin level change
+        Parameters
+        ----------
+        enable : bool
+            Enable or disable the pin.
+        direction : PinDirection
+            The pin direction.
+        send_on_change : bool
+            Send latest data notification for this pin.
         """
         self.enabled = enabled
         self.send_on_change = send_on_change
@@ -90,8 +99,17 @@ class PinControl(LittleEndianStructure):
     ]
     def __init__(self, control_value: int, transition_duration: int=0):
         """
-        control_value (int): the control value (valid range: [0,65535])
-        transition_duration (int): duration to reach the target value in untis of 1ms (valid range: [0,4294967295])
+        Parameters
+        ----------
+        control_value : int
+            The control value (valid range: [0,65535]).
+        transition_duration : int, optional
+            Duration to reach the target value in untis of 1ms (valid range: [0,4294967295])
+
+        Raises
+        ------
+        ValueError
+            If the control value or duration is out of range.
         """
         if control_value < 0 or control_value > 65535:
             raise ValueError("The valid range for the control value is [0,65535]")
@@ -133,7 +151,7 @@ class _PinsIn(LittleEndianStructure):
     ]
 
 
-class Analog(KonashiElementBase._KonashiElementBase):
+class _Analog(KonashiElementBase._KonashiElementBase):
     def __init__(self, konashi) -> None:
         super().__init__(konashi)
         self._config = _Config()
@@ -158,12 +176,15 @@ class Analog(KonashiElementBase._KonashiElementBase):
         
 
     def _ntf_cb_config(self, sender, data):
+        logger.debug("Received config data: {}".format("".join("{:02x}".format(x) for x in data)))
         self._config = _Config.from_buffer_copy(data)
 
     def _ntf_cb_output(self, sender, data):
+        logger.debug("Received output data: {}".format("".join("{:02x}".format(x) for x in data)))
         self._output = _PinsOut.from_buffer_copy(data)
 
     def _ntf_cb_input(self, sender, data):
+        logger.debug("Received input data: {}".format("".join("{:02x}".format(x) for x in data)))
         _new_input = _PinsIn.from_buffer_copy(data)
         for i in range(KONASHI_AIO_COUNT):
             if _new_input.pin[i].valid:
@@ -189,8 +210,17 @@ class Analog(KonashiElementBase._KonashiElementBase):
 
     async def config_adc_period(self, period: float) -> None:
         """
-        Set the ADC read period.
-          period: the read period is seconds (valid value: [0.1,25.6])
+        Configure the ADC update period.
+        
+        Parameters
+        ----------
+        period : float
+            The read period is seconds (valid range: [0.1,25.6])
+
+        Raises
+        ------
+        ValueError
+            If the period value is out of range.
         """
         if period < 0.1 or period > 25.6:
             raise ValueError("Period should be in range [0.1,25.6] seconds")
@@ -199,26 +229,35 @@ class Analog(KonashiElementBase._KonashiElementBase):
         await self._write(KONASHI_UUID_CONFIG_CMD, b)
 
     async def config_adc_ref(self, ref: AdcRef) -> None:
+        """Configure the ADC voltage reference."""
         b = bytearray([KONASHI_CFG_CMD_ANALOG, 0xE0|(ref&0x0F)])
         await self._write(KONASHI_UUID_CONFIG_CMD, b)
 
     async def config_vdac_ref(self, ref: VdacRef) -> None:
+        """Configure the VDAC voltage reference."""
         b = bytearray([KONASHI_CFG_CMD_ANALOG, 0xD0|(ref&0x0F)])
         await self._write(KONASHI_UUID_CONFIG_CMD, b)
 
     async def config_idac_range(self, range: IdacRange) -> None:
+        """Configure the IDAC currant range."""
         b = bytearray([KONASHI_CFG_CMD_ANALOG, 0xC0|(range&0x0F)])
         await self._write(KONASHI_UUID_CONFIG_CMD, b)
 
     async def get_analog_config(self) -> AnalogConfig:
+        """Returns the current analog configuration."""
         await self._read(KONASHI_UUID_ANALOG_CONFIG_GET)
         return self._config.analog
 
     async def config_pins(self, configs: Sequence(Tuple[int, PinConfig])) -> None:
         """
-        Specify a list of configurations in the format (pin_bitmask, config) with:
-          pin_bitmask (int): a bitmask of the pins to apply this configuration to
-          config (PinConfig): the configuration for the specified pins
+        Configure pins.
+
+        Parameters
+        ----------
+        configs : list of tuples of int, PinConfig
+            The list of configurations to set. For each tuple:
+            int: pin bitmask. A bitmask of the pins to apply this control to (range 0x00 to 0x07).
+            PinConfig: config. The configuration for the pins specified in the bitmask.
         """
         b = bytearray([KONASHI_CFG_CMD_ANALOG])
         for config in configs:
@@ -228,6 +267,7 @@ class Analog(KonashiElementBase._KonashiElementBase):
         await self._write(KONASHI_UUID_CONFIG_CMD, b)
 
     async def get_pins_config(self, pin_bitmask: int) -> List[PinConfig]:
+        """Returns a list of configurations for the pins specified in the bitmask."""
         await self._read(KONASHI_UUID_ANALOG_CONFIG_GET)
         l = []
         for i in range(KONASHI_AIO_COUNT):
@@ -237,9 +277,14 @@ class Analog(KonashiElementBase._KonashiElementBase):
 
     async def control_pins(self, controls: Sequence(Tuple[int, PinControl])) -> None:
         """
-        Specify a list of controls in the format (pin, control) with:
-          pin (int): a bitmask of the pins to apply this control to
-          control (PinControl): the control for the specified pins
+        Control pins.
+
+        Parameters
+        ----------
+        controls : list of tuples of int, PinControl
+            The list of controls to set. For each tuple:
+            int: pin bitmask. A bitmask of the pins to apply this control to (range 0x00 to 0x07).
+            PinControl: control. The control for the pins specified in the bitmask.
         """
         b = bytearray([KONASHI_CTL_CMD_ANALOG])
         for control in controls:
@@ -250,12 +295,25 @@ class Analog(KonashiElementBase._KonashiElementBase):
 
     def calc_control_value_for_voltage(self, voltage: float) -> int:
         """
-        Convert target voltage to control value for controling the VDAC output.
-        voltage: The target voltage
+        Returns a control value for the given voltage.
+
+        Parameters
+        ----------
+        voltage : float
+            The target voltage in V.
+
+        Raises
+        ------
+        KonashiDisabledError
+            If the VDAC is disabled.
+        KonashiInvalidError
+            If the VDAC configuration is invalid.
+        ValueError
+            If the target voltage value is not within range for the configuration.
         """
         max_ref = None
         if self._config.analog.vdac_voltage_reference == VdacRef.DISABLE:
-            raise KonashiError("The VDAC is not enabled")
+            raise KonashiDisabledError("The VDAC is not enabled")
         elif self._config.analog.vdac_voltage_reference == VdacRef.REF_1V25LN or self._config.analog.vdac_voltage_reference == VdacRef.REF_1V25:
             max_ref = 1.25
         elif self._config.analog.vdac_voltage_reference == VdacRef.REF_2V5LN or self._config.analog.vdac_voltage_reference == VdacRef.REF_2V5:
@@ -263,20 +321,33 @@ class Analog(KonashiElementBase._KonashiElementBase):
         elif self._config.analog.vdac_voltage_reference == VdacRef.REF_VDD:
             max_ref = 3.3
         else:
-            raise KonashiError("The VDAC configuration is not valid")
+            raise KonashiInvalidError("The VDAC configuration is not valid")
         if voltage > max_ref:
             raise ValueError(f"The target voltage needs to be in the range [0,{max_ref}]")
         return round(voltage*4095/max_ref)
 
     def calc_control_value_for_current(self, current: float) -> int:
         """
-        Convert target current to control value for controling the IDAC output.
-        current: The target current in uA
+        Returns a control value for the given current.
+
+        Parameters
+        ----------
+        current : float
+            The target current in uA.
+
+        Raises
+        ------
+        KonashiDisabledError
+            If the IDAC is disabled.
+        KonashiInvalidError
+            If the IDAC configuration is invalid.
+        ValueError
+            If the target current value is not within range for the configuration.
         """
         first = None
         last = None
         if self._config.analog.idac_current_step == IdacRange.DISABLE:
-            raise KonashiError("The IDAC is not enabled")
+            raise KonashiDisabledError("The IDAC is not enabled")
         elif self._config.analog.idac_current_step == IdacRange.RANGE0:
             first = 0.05
             last = 1.6
@@ -290,15 +361,13 @@ class Analog(KonashiElementBase._KonashiElementBase):
             first = 2
             last = 64
         else:
-            raise KonashiError("The IDAC configuration is not valid")
+            raise KonashiInvalidError("The IDAC configuration is not valid")
         if not first <= current <= last:
             raise ValueError(f"The target current needs to be in the range [{first},{last}]")
         return round((current-first)*31/(last-first))
 
     async def get_pins_control(self, pin_bitmask: int) -> List[PinControl]:
-        """
-        Get a list of current Analog output levels for the pins specified in the bitmask.
-        """
+        """Returns a list of output controls for the pins specified in the bitmask."""
         await self._read(KONASHI_UUID_ANALOG_OUTPUT_GET)
         l = []
         for i in range(KONASHI_AIO_COUNT):
@@ -310,9 +379,7 @@ class Analog(KonashiElementBase._KonashiElementBase):
         return l
 
     async def read_pins(self, pin_bitmask: int) -> List[int]:
-        """
-        Get a list of current Analog input levels for the pins specified in the bitmask.
-        """
+        """Returns a list of input values converted to V for the pins specified in the bitmask."""
         await self._read(KONASHI_UUID_ANALOG_INPUT)
         l = []
         for i in range(KONASHI_AIO_COUNT):

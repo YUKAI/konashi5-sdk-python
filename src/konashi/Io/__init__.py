@@ -16,7 +16,7 @@ class Io:
         self._gpio = Gpio._Gpio(konashi)
         self._softpwm = SoftPWM._SoftPWM(konashi, self._gpio)
         self._hardpwm = HardPWM._HardPWM(konashi, self._gpio)
-        self._analog = Analog.Analog(konashi)
+        self._analog = Analog._Analog(konashi)
         self._i2c = I2C.I2C(konashi, self._gpio)
         self._uart = UART.UART(konashi)
         self._spi = SPI.SPI(konashi, self._gpio)
@@ -34,7 +34,7 @@ class Io:
         return self._hardpwm
 
     @property
-    def analog(self) -> Analog.Analog:
+    def analog(self) -> Analog._Analog:
         return self._analog
 
     @property

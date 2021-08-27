@@ -7,6 +7,12 @@ class KonashiError(Exception):
 class KonashiConnectionError(Exception):
     pass
 
+class KonashiInvalidError(Exception):
+    pass
+
+class KonashiDisabledError(Exception):
+    pass
+
 class NotFoundError(Exception):
     pass
 
