@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import struct
+import logging
 from ctypes import *
 from typing import *
 from enum import *
