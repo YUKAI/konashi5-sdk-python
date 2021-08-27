@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import struct
+import logging
 from ctypes import *
 from typing import *
 from enum import *
@@ -13,6 +14,9 @@ from bleak import *
 from .. import KonashiElementBase
 from ..Errors import *
 from . import Gpio
+
+
+logger = logging.getLogger("Konashi.Io.SPI")
 
 
 KONASHI_UUID_CONFIG_CMD = "064d0201-8251-49d9-b6f3-f7ba35e5d0a1"
@@ -74,7 +78,7 @@ class Config(LittleEndianStructure):
         return s
 
 
-class SPI(KonashiElementBase._KonashiElementBase):
+class _SPI(KonashiElementBase._KonashiElementBase):
     def __init__(self, konashi, gpio) -> None:
         super().__init__(konashi)
         self._gpio = gpio
@@ -96,9 +100,11 @@ class SPI(KonashiElementBase._KonashiElementBase):
 
 
     def _ntf_cb_config(self, sender, data):
+        logger.debug("Received config data: {}".format("".join("{:02x}".format(x) for x in data)))
         self._config = Config.from_buffer_copy(data)
 
     def _ntf_cb_data_in(self, sender, data):
+        logger.debug("Received input data: {}".format("".join("{:02x}".format(x) for x in data)))
         if self._async_loop is not None and self._data_in_future is not None:
             self._async_loop.call_soon_threadsafe(self._data_in_future.set_result, data)
 
@@ -106,7 +112,16 @@ class SPI(KonashiElementBase._KonashiElementBase):
     async def config(self, config: Config) -> None:
         """
         Configure the I2C peripheral.
-          config: the I2C configuration
+
+        Parameters
+        ----------
+        config : Config
+            The configuration.
+
+        Raises
+        ------
+        PinUnavailableError
+            If a pin is already configured with a function other than SPI.
         """
         if config.enabled:
             if self._gpio._config[KONASHI_SPI_CS_PINNB].function != int(Gpio.PinFunction.DISABLED) and self._gpio._config[KONASHI_SPI_CS_PINNB].function != int(Gpio.PinFunction.SPI):
@@ -121,12 +136,33 @@ class SPI(KonashiElementBase._KonashiElementBase):
         await self._write(KONASHI_UUID_CONFIG_CMD, b)
 
     async def get_config(self) -> Config:
+        """Returns the current configuration."""
         await self._read(KONASHI_UUID_SPI_CONFIG_GET)
         return self._config
 
     async def transaction(self, write_data: bytes) -> bytes:
+        """
+        Run a transaction.
+
+        Parameters
+        ----------
+        write_data : bytes
+            The data to send (length range: 1 ~ 127)
+
+        Returns
+        -------
+        bytes
+            The read data.
+
+        Raises
+        ------
+        ValueError
+            If the write data is empty or too long.
+        """
         if len(write_data) == 0:
             ValueError("Write data buffer cannot be empty")
+        if len(write_data) > 127:
+            ValueError("Maximum write data length is 127 bytes")
         b = bytearray([KONASHI_CTL_CMD_SPI_DATA]) + bytearray(write_data)
         self._async_loop = asyncio.get_event_loop()
         self._data_in_future = self._async_loop.create_future()
