@@ -13,6 +13,10 @@ from bleak import *
 from .. import KonashiElementBase
 from ..Errors import *
 
+
+logger = logging.getLogger("Konashi.Settings.System")
+
+
 KONASHI_UUID_SETTINGS_CMD = "064d0101-8251-49d9-b6f3-f7ba35e5d0a1"
 KONASHI_SET_CMD_SYSTEM = 0x01
 KONASHI_UUID_SYSTEM_SETTINGS_GET = "064d0102-8251-49d9-b6f3-f7ba35e5d0a1"
@@ -74,6 +78,7 @@ class System(KonashiElementBase._KonashiElementBase):
 
 
     def _ntf_cb_settings(self, sender, data):
+        logger.debug("Received settings data: {}".format("".join("{:02x}".format(x) for x in data)))
         self._settings = Settings.from_buffer_copy(data)
 
 
