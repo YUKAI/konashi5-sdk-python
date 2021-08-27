@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import struct
+import logging
 from ctypes import *
 from typing import *
 from enum import *
@@ -12,6 +13,9 @@ from bleak import *
 
 from .. import KonashiElementBase
 from ..Errors import *
+
+
+logger = logging.getLogger("Konashi.Io.UART")
 
 
 KONASHI_UUID_CONFIG_CMD = "064d0201-8251-49d9-b6f3-f7ba35e5d0a1"
@@ -72,7 +76,7 @@ class Config(LittleEndianStructure):
         return s
 
 
-class UART(KonashiElementBase._KonashiElementBase):
+class _UART(KonashiElementBase._KonashiElementBase):
     def __init__(self, konashi) -> None:
         super().__init__(konashi)
         self._config = Config(False, 0, Parity.NONE, StopBits.ONE)
@@ -95,35 +99,66 @@ class UART(KonashiElementBase._KonashiElementBase):
 
 
     def _ntf_cb_config(self, sender, data):
+        logger.debug("Received config data: {}".format("".join("{:02x}".format(x) for x in data)))
         self._config = Config.from_buffer_copy(data)
 
     def _ntf_cb_data_in(self, sender, data):
+        logger.debug("Received input data: {}".format("".join("{:02x}".format(x) for x in data)))
         if self._data_in_cb is not None:
             self._data_in_cb(data)
 
     def _ntf_cb_send_done(self, sender, data):
+        logger.debug("Received send done data: {}".format("".join("{:02x}".format(x) for x in data)))
         if self._async_loop is not None and self._send_done_future is not None:
             self._async_loop.call_soon_threadsafe(self._send_done_future.set_result, data)
 
 
     async def config(self, config: Config) -> None:
-        """
-        Configure the UART peripheral.
-          config: the UART configuration
-        """
+        """Configure the UART peripheral."""
         b = bytearray([KONASHI_CFG_CMD_UART]) + bytearray(config)
         await self._write(KONASHI_UUID_CONFIG_CMD, b)
 
     async def get_config(self) -> Config:
+        """Returns the current UART configuration."""
         await self._read(KONASHI_UUID_UART_CONFIG_GET)
         return self._config
 
     def set_data_in_cb(self, callback: Callable[[bytes], None]) -> None:
+        """
+        Set a callback for input data reception.
+
+        Parameters
+        ----------
+        callback : callable
+            The input callback function.
+            The function takes 1 parameter and returns nothing:
+                data: bytes. The received data.
+        """
         self._data_in_cb = callback
 
     async def send(self, write_data: bytes) -> bool:
+        """
+        Send data.
+
+        Parameters
+        ----------
+        write_data : bytes
+            The data to send (length range: 1 ~ 127)
+
+        Returns
+        -------
+        bool
+            The success or failure of the send.
+
+        Raises
+        ------
+        ValueError
+            If the write data is empty or too long.
+        """
         if len(write_data) == 0:
             ValueError("Write data buffer cannot be empty")
+        if len(write_data) > 127:
+            ValueError("Write data is too long")
         b = bytearray([KONASHI_CTL_CMD_UART_DATA]) + bytearray(write_data)
         self._async_loop = asyncio.get_event_loop()
         self._send_done_future = self._async_loop.create_future()
