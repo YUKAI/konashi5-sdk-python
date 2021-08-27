@@ -158,7 +158,7 @@ class _UART(KonashiElementBase._KonashiElementBase):
         if len(write_data) == 0:
             ValueError("Write data buffer cannot be empty")
         if len(write_data) > 127:
-            ValueError("Write data is too long")
+            ValueError("Maximum write data length is 127 bytes")
         b = bytearray([KONASHI_CTL_CMD_UART_DATA]) + bytearray(write_data)
         self._async_loop = asyncio.get_event_loop()
         self._send_done_future = self._async_loop.create_future()
