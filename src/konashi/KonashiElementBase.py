@@ -15,7 +15,7 @@ from bleak import *
 from .Errors import *
 
 
-logger = logging.getLogger("KonashiElement")
+logger = logging.getLogger(__name__)
 
 
 class _KonashiElementBase:

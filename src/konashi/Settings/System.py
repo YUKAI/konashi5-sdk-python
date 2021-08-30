@@ -15,7 +15,7 @@ from .. import KonashiElementBase
 from ..Errors import *
 
 
-logger = logging.getLogger("Konashi.Settings.System")
+logger = logging.getLogger(__name__)
 
 
 KONASHI_UUID_SETTINGS_CMD = "064d0101-8251-49d9-b6f3-f7ba35e5d0a1"

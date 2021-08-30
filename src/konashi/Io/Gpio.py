@@ -15,7 +15,7 @@ from .. import KonashiElementBase
 from ..Errors import *
 
 
-logger = logging.getLogger("Konashi.Io.Gpio")
+logger = logging.getLogger(__name__)
 
 
 KONASHI_UUID_CONFIG_CMD = "064d0201-8251-49d9-b6f3-f7ba35e5d0a1"
@@ -215,7 +215,7 @@ class _Gpio(KonashiElementBase._KonashiElementBase):
                     if PinFunction(self._config[i].function) != PinFunction.GPIO:
                         raise PinUnavailableError(f'Pin {i} is not configured as GPIO (configured as {_KONASHI_GPIO_FUNCTION_STR[self._config[i].function]})')
                     b.extend(bytearray([(i<<4)|(control[1])]))
-        await self._write(KONASHI_UUID_CONFIG_CMD, b)
+        await self._write(KONASHI_UUID_CONTROL_CMD, b)
 
     async def get_pins_control(self, pin_bitmask: int) -> List[PinLevel]:
         """Returns a list of output levels for the pins specified in the bitmask."""

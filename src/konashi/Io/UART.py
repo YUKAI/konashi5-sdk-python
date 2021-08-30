@@ -15,7 +15,7 @@ from .. import KonashiElementBase
 from ..Errors import *
 
 
-logger = logging.getLogger("Konashi.Io.UART")
+logger = logging.getLogger(__name__)
 
 
 KONASHI_UUID_CONFIG_CMD = "064d0201-8251-49d9-b6f3-f7ba35e5d0a1"

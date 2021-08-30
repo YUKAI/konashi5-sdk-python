@@ -17,7 +17,7 @@ from .Builtin import Builtin
 from .Errors import *
 
 
-logger = logging.getLogger("Konashi")
+logger = logging.getLogger(__name__)
 
 
 KONASHI_ADV_SERVICE_UUID = "064d0100-8251-49d9-b6f3-f7ba35e5d0a1"
