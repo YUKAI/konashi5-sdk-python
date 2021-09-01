@@ -218,3 +218,7 @@ class Konashi:
     @property
     def builtin(self) -> Builtin:
         return self._builtin
+
+    @property
+    def name(self) -> str:
+        return self._name
