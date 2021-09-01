@@ -159,7 +159,8 @@ class _SoftPWM(KonashiElementBase._KonashiElementBase):
         for i in range(KONASHI_SOFTPWM_COUNT):
             if i in self._ongoing_control and self._output[i].transition_duration == 0:
                 self._ongoing_control.remove(i)
-                self._trans_end_cb(i)
+                if self._trans_end_cb is not None:
+                    self._trans_end_cb(i)
 
 
     async def config_pins(self, configs: Sequence(Tuple[int, PinConfig])) -> None:

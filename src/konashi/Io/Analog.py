@@ -291,7 +291,7 @@ class _Analog(KonashiElementBase._KonashiElementBase):
             for i in range(KONASHI_AIO_COUNT):
                 if (control[0]&(1<<i)) > 0:
                     b.extend(bytearray([i])+bytearray(control[1]))
-        await self._write(KONASHI_UUID_CONFIG_CMD, b)
+        await self._write(KONASHI_UUID_CONTROL_CMD, b)
 
     def calc_control_value_for_voltage(self, voltage: float) -> int:
         """

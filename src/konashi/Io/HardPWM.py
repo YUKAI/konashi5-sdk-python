@@ -177,7 +177,8 @@ class _HardPWM(KonashiElementBase._KonashiElementBase):
         for i in range(KONASHI_HARDPWM_COUNT):
             if i in self._ongoing_control and self._output[i].transition_duration == 0:
                 self._ongoing_control.remove(i)
-                self._trans_end_cb(i)
+                if self._trans_end_cb is not None:
+                    self._trans_end_cb(i)
 
 
     def _calc_pwm_config_for_period(self, period: float) -> PwmConfig:
