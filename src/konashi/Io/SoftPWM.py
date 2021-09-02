@@ -160,7 +160,7 @@ class _SoftPWM(KonashiElementBase._KonashiElementBase):
             if i in self._ongoing_control and self._output[i].transition_duration == 0:
                 self._ongoing_control.remove(i)
                 if self._trans_end_cb is not None:
-                    self._trans_end_cb(i)
+                    self._trans_end_cb(i, self._output[i].control_type, self._output[i].control_value)
 
 
     async def config_pins(self, configs: Sequence(Tuple[int, PinConfig])) -> None:
@@ -197,7 +197,7 @@ class _SoftPWM(KonashiElementBase._KonashiElementBase):
                 l.append(self._config[i])
         return l
 
-    def set_transition_end_cb(self, notify_callback: Callable[[int], None]) -> None:
+    def set_transition_end_cb(self, notify_callback: Callable[[int, ControlType, int], None]) -> None:
         """
         Set a transition end callback function.
         The function will be called when SoftPWM value transition is completed.

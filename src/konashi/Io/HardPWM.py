@@ -178,7 +178,7 @@ class _HardPWM(KonashiElementBase._KonashiElementBase):
             if i in self._ongoing_control and self._output[i].transition_duration == 0:
                 self._ongoing_control.remove(i)
                 if self._trans_end_cb is not None:
-                    self._trans_end_cb(i)
+                    self._trans_end_cb(i, self._calc_duty_for_control_value(self._output[i].control_value))
 
 
     def _calc_pwm_config_for_period(self, period: float) -> PwmConfig:
@@ -199,6 +199,9 @@ class _HardPWM(KonashiElementBase._KonashiElementBase):
         if top <= 65535:
             return PwmConfig(Clock.CASCADE, presc, top)
         raise ValueError("A suitable configuration cannot be calculated for this period value")
+
+    def _calc_duty_for_control_value(self, value: int) -> float:
+        return value * 100.0 / self._config.pwm.top
 
 
     async def config_pwm(self, period: float) -> None:
@@ -246,7 +249,7 @@ class _HardPWM(KonashiElementBase._KonashiElementBase):
                 l.append(self._config.pin[i])
         return l
 
-    def set_transition_end_cb(self, notify_callback: Callable[[int], None]) -> None:
+    def set_transition_end_cb(self, notify_callback: Callable[[int, float], None]) -> None:
         """
         Set a transition end callback function.
         The function will be called when HardPWM value transition is completed.
