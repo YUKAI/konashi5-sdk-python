@@ -37,12 +37,15 @@ class PinFunction(IntEnum):
     I2C = 3
     SPI = 4
 class PinDirection(IntEnum):
-    INPUT = 0
-    OUTPUT = 1
-class PinWiredFunction(IntEnum):
     DISABLED = 0
-    OPEN_DRAIN = 1
-    OPEN_SOURCE = 2
+    INPUT = 1
+    OUTPUT = 2
+    OPEN_DRAIN = 3
+    OPEN_SOURCE = 4
+class PinPull(IntEnum):
+    NONE = 0
+    UP = 1
+    DOWN = 2
 class PinConfig(LittleEndianStructure):
     _pack_ = 1
     _fields_ = [
@@ -55,19 +58,44 @@ class PinConfig(LittleEndianStructure):
         ('send_on_change', c_uint8, 1),
         ('', c_uint8, 2)
     ]
-    def __init__(self, direction: PinDirection=PinDirection.INPUT, send_on_change: bool=True, pull_down: bool=False, pull_up: bool=False, wired_fct: PinWiredFunction=PinWiredFunction.DISABLED):
-        self.direction = direction
+    def __init__(self, direction: PinDirection, pull: PinPull, send_on_change: bool):
+        if direction == PinDirection.INPUT:
+            self.function = 1
+            self.direction = 0
+            self.wired_fct = 0
+        elif direction == PinDirection.OUTPUT:
+            self.function = 1
+            self.direction = 1
+            self.wired_fct = 0
+        elif direction == PinDirection.OPEN_DRAIN:
+            self.function = 1
+            self.direction = 0
+            self.wired_fct = 1
+        elif direction == PinDirection.OPEN_SOURCE:
+            self.function = 1
+            self.direction = 0
+            self.wired_fct = 2
+        else:
+            self.function = 0
+            self.direction = 0
+            self.wired_fct = 0
+        if pull == PinPull.UP:
+            self.pull_down = 0
+            self.pull_up = 1
+        elif pull == PinPull.DOWN:
+            self.pull_down = 1
+            self.pull_up = 0
+        else:
+            self.pull_down = 0
+            self.pull_up = 0
         self.send_on_change = send_on_change
-        self.pull_down = pull_down
-        self.pull_up = pull_up
-        self.wired_fct = wired_fct
     def __str__(self):
         s = "KonashiGpioPinConfig("
         try:
             s += _KONASHI_GPIO_FUNCTION_STR[self.function]
             if self.function == PinFunction.GPIO:
                 s += ", "
-                s += "OD" if self.wired_fct==PinWiredFunction.OPEN_DRAIN else "OS" if self.wired_fct==PinWiredFunction.OPEN_SOURCE else "OUT" if self.direction==PinDirection.OUTPUT else "IN"
+                s += "OD" if self.wired_fct==1 else "OS" if self.wired_fct==2 else "OUT" if 1 else "IN"
                 if self.pull_down:
                     s += ", PDOWN"
                 if self.pull_up:
@@ -142,7 +170,7 @@ class _Gpio(KonashiElementBase._KonashiElementBase):
         self._input = _PinsIO.from_buffer_copy(data)
 
 
-    async def config_pins(self, configs: Sequence(Tuple[int, bool, PinConfig])) -> None:
+    async def config_pins(self, configs: Sequence(Tuple[int, PinConfig])) -> None:
         """
         Configure pins.
 
@@ -151,8 +179,7 @@ class _Gpio(KonashiElementBase._KonashiElementBase):
         configs : list of tuples of int, bool, PinConfig
             The list of configurations to set. For each tuple:
             int: pin bitmask. A bitmask of the pins to apply this configuration to (range 0x00 to 0xFF).
-            bool: enable. Enable or disable the pins specified in the bitmask.
-            PinConfig: config. The configuration for the pins specified in the bitmask when enabling.
+            PinConfig: config. The configuration for the pins specified in the bitmask.
 
         Raises
         ------
@@ -165,7 +192,7 @@ class _Gpio(KonashiElementBase._KonashiElementBase):
                 if (config[0]&(1<<i)) > 0:
                     if PinFunction(self._config[i].function) != PinFunction.DISABLED and PinFunction(self._config[i].function) != PinFunction.GPIO:
                         raise PinUnavailableError(f'Pin {i} is already configured as {_KONASHI_GPIO_FUNCTION_STR[self._config[i].function]}')
-                    b.extend(bytearray([(i<<4)|(0x1 if config[1] else 0x0), bytes(config[2])[1]]))
+                    b.extend(bytearray([(i<<4)|(bytes(config[1])[0]), bytes(config[1])[1]]))
         await self._write(KONASHI_UUID_CONFIG_CMD, b)
 
     async def get_pins_config(self, pin_bitmask: int) -> List[PinConfig]:
