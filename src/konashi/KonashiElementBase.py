@@ -24,7 +24,7 @@ class _KonashiElementBase:
 
     async def _read(self, uuid: str) -> None:
         if self._konashi._ble_client is None:
-            raise KonashiError(f'Connection is not established')
+            raise KonashiConnectionError(f'Connection is not established')
         try:
             logger.debug("Read from {}".format(uuid))
             await self._konashi._ble_client.read_gatt_char(uuid)
@@ -33,7 +33,7 @@ class _KonashiElementBase:
 
     async def _write(self, uuid: str, data: bytes) -> None:
         if self._konashi._ble_client is None:
-            raise KonashiError(f'Connection is not established')
+            raise KonashiConnectionError(f'Connection is not established')
         try:
             logger.debug("Write to {}: {}".format(uuid, "".join("{:02x}".format(x) for x in data)))
             await self._konashi._ble_client.write_gatt_char(uuid, data)
@@ -42,7 +42,7 @@ class _KonashiElementBase:
 
     async def _enable_notify(self, uuid: str, cb: Callable[[int, bytearray], None]) -> None:
         if self._konashi._ble_client is None:
-            raise KonashiError(f'Connection is not established')
+            raise KonashiConnectionError(f'Connection is not established')
         try:
             logger.debug("Enable notify for {}".format(uuid))
             await self._konashi._ble_client.start_notify(uuid, cb)
@@ -51,7 +51,7 @@ class _KonashiElementBase:
 
     async def _disable_notify(self, uuid: str) -> None:
         if self._konashi._ble_client is None:
-            raise KonashiError(f'Connection is not established')
+            raise KonashiConnectionError(f'Connection is not established')
         try:
             logger.debug("Disable notify for {}".format(uuid))
             await self._konashi._ble_client.stop_notify(uuid)
