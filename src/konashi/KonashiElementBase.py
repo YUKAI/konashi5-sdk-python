@@ -11,6 +11,7 @@ from enum import *
 import abc
 
 from bleak import *
+from bleak.exc import BleakDBusError
 
 from .Errors import *
 
@@ -27,7 +28,15 @@ class _KonashiElementBase:
             raise KonashiConnectionError(f'Connection is not established')
         try:
             logger.debug("Read from {}".format(uuid))
-            await self._konashi._ble_client.read_gatt_char(uuid)
+            while True:
+                try:
+                    await self._konashi._ble_client.read_gatt_char(uuid)
+                    break
+                except BleakDBusError as e:
+                    if e.dbus_error == "org.bluez.Error.InProgress":
+                        continue
+                    else:
+                        raise e
         except BleakError as e:
             raise KonashiError(f'Error occured during BLE read: "{str(e)}"')
 
@@ -36,7 +45,15 @@ class _KonashiElementBase:
             raise KonashiConnectionError(f'Connection is not established')
         try:
             logger.debug("Write to {}: {}".format(uuid, "".join("{:02x}".format(x) for x in data)))
-            await self._konashi._ble_client.write_gatt_char(uuid, data)
+            while True:
+                try:
+                    await self._konashi._ble_client.write_gatt_char(uuid, data)
+                    break
+                except BleakDBusError as e:
+                    if e.dbus_error == "org.bluez.Error.InProgress":
+                        continue
+                    else:
+                        raise e
         except BleakError as e:
             raise KonashiError(f'Error occured during BLE write: "{str(e)}"')
 
@@ -45,7 +62,15 @@ class _KonashiElementBase:
             raise KonashiConnectionError(f'Connection is not established')
         try:
             logger.debug("Enable notify for {}".format(uuid))
-            await self._konashi._ble_client.start_notify(uuid, cb)
+            while True:
+                try:
+                    await self._konashi._ble_client.start_notify(uuid, cb)
+                    break
+                except BleakDBusError as e:
+                    if e.dbus_error == "org.bluez.Error.InProgress":
+                        continue
+                    else:
+                        raise e
         except BleakError as e:
             raise KonashiError(f'Error occured during BLE notify start: "{str(e)}"')
 
@@ -54,7 +79,15 @@ class _KonashiElementBase:
             raise KonashiConnectionError(f'Connection is not established')
         try:
             logger.debug("Disable notify for {}".format(uuid))
-            await self._konashi._ble_client.stop_notify(uuid)
+            while True:
+                try:
+                    await self._konashi._ble_client.stop_notify(uuid)
+                    break
+                except BleakDBusError as e:
+                    if e.dbus_error == "org.bluez.Error.InProgress":
+                        continue
+                    else:
+                        raise e
         except BleakError as e:
             raise KonashiError(f'Error occured during BLE notify stop: "{str(e)}"')
 
