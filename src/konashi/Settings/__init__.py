@@ -8,15 +8,15 @@ from . import Bluetooth
 
 class Settings:
     def __init__(self, konashi):
-        self._system = System.System(konashi)
-        self._bluetooth = Bluetooth.Bluetooth(konashi)
+        self._system = System._System(konashi)
+        self._bluetooth = Bluetooth._Bluetooth(konashi)
 
     @property
-    def system(self) -> System.System:
+    def system(self) -> System._System:
         return self._system
 
     @property
-    def bluetooth(self) -> Bluetooth.Bluetooth:
+    def bluetooth(self) -> Bluetooth._Bluetooth:
         return self._bluetooth
 
     async def _on_connect(self):

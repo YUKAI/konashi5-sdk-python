@@ -81,7 +81,7 @@ class Settings(LittleEndianStructure):
         return s
 
 
-class Bluetooth(KonashiElementBase._KonashiElementBase):
+class _Bluetooth(KonashiElementBase._KonashiElementBase):
     def __init__(self, konashi) -> None:
         super().__init__(konashi)
         self._settings: Settings = Settings()

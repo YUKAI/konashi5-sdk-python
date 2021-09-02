@@ -54,7 +54,7 @@ class Settings(LittleEndianStructure):
         return s
 
 
-class System(KonashiElementBase._KonashiElementBase):
+class _System(KonashiElementBase._KonashiElementBase):
     def __init__(self, konashi) -> None:
         super().__init__(konashi)
         self._settings: Settings = Settings()
