@@ -47,7 +47,7 @@ class _KonashiElementBase:
             logger.debug("Write to {}: {}".format(uuid, "".join("{:02x}".format(x) for x in data)))
             while True:
                 try:
-                    await self._konashi._ble_client.write_gatt_char(uuid, data)
+                    await self._konashi._ble_client.write_gatt_char(uuid, data, True)
                     break
                 except BleakDBusError as e:
                     if e.dbus_error == "org.bluez.Error.InProgress":
