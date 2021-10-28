@@ -14,7 +14,7 @@ from .. import KonashiElementBase
 from ..Errors import *
 
 
-KONASHI_UUID_BUILTIN_ACCELGYRO = "064d0401-8251-49d9-b6f3-f7ba35e5d0a1"
+KONASHI_UUID_BUILTIN_ACCELGYRO = "064d0402-8251-49d9-b6f3-f7ba35e5d0a1"
 
 
 class AccelGyro(KonashiElementBase._KonashiElementBase):

@@ -22,8 +22,6 @@ logger = logging.getLogger(__name__)
 
 KONASHI_ADV_SERVICE_UUID = "064d0100-8251-49d9-b6f3-f7ba35e5d0a1"
 
-KONASHI_UUID_BUILTIN = "064d0400-8251-49d9-b6f3-f7ba35e5d0a1"
-
 
 class Konashi:
     def __init__(self, name: str) -> None:
@@ -196,10 +194,7 @@ class Konashi:
         if _con:
             await self._settings._on_connect()
             await self._io._on_connect()
-            srvcs = await self._ble_client.get_services()
-            for s in srvcs:
-                if s.uuid == KONASHI_UUID_BUILTIN:
-                    await self._builtin._on_connect()
+            await self._builtin._on_connect()
 
     async def disconnect(self) -> None:
         """Disconnect from this konashi device."""
