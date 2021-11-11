@@ -190,7 +190,7 @@ class _Analog(KonashiElementBase._KonashiElementBase):
             if _new_input.pin[i].valid:
                 if _new_input.pin[i].value != self._input.pin[i].value:
                     if self._input_cb is not None:
-                        self._input_cb(i, _new_input.pin[i].value)
+                        self._input_cb(i, self._calc_voltage_for_value(_new_input.pin[i].value))
         self._input = _new_input
 
 
@@ -274,6 +274,21 @@ class _Analog(KonashiElementBase._KonashiElementBase):
             if (pin_bitmask&(1<<i)) > 0:
                 l.append(self._config.pin[i])
         return l
+
+    def set_input_cb(self, notify_callback: Callable[[int, int], None]) -> None:
+        """
+        Set an Analog input callback function.
+        The function will be called when Analog input is received.
+
+        Parameters
+        ----------
+        notify_callback : callable
+            The input callback function.
+            The function takes 2 parameters and returns nothing:
+                pin: int. The pin number.
+                value: int. The pin value.
+        """
+        self._input_cb = notify_callback
 
     async def control_pins(self, controls: Sequence(Tuple[int, PinControl])) -> None:
         """
