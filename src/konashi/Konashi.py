@@ -24,7 +24,14 @@ KONASHI_ADV_SERVICE_UUID = "064d0100-8251-49d9-b6f3-f7ba35e5d0a1"
 
 
 class Konashi:
+    """This class represents a single Konashi device.
+
+    Args:
+        name (str): The name (BLE advertising name) of this Konashi device.
+    """
     def __init__(self, name: str) -> None:
+        """Constructor.
+        """
         self._name = name
         self._ble_dev = None
         self._ble_client = None
@@ -48,28 +55,21 @@ class Konashi:
         
 
     @staticmethod
-    async def find(name: str, timeout: float) -> Konashi:
-        """
-        Find a konashi device.
+    async def find(name: str, timeout: float=0.0) -> Konashi:
+        """Find the Konashi device specified by name. This is a static method.
+        If the timeout expires, NotFoundError is raised.
+        If the timeout is 0.0, the search continues indefinitely.
 
-        Parameters
-        ----------
-        name : str
-            The konashi device name to search for.
-        timeout : float or None
-            The timeout for the search in seconds (None will search indefinitely).
+        Args:
+            name (str): The Konashi device name to search for.
+            timeout (float, optional): The search timeout in seconds. Defaults to 0.0.
 
-        Returns
-        -------
-        Konashi
-            An instance representing the found device.
+        Raises:
+            NotFoundError: The Konashi device was not found within the timeout time.
+            InvalidDeviceError: The specified device name was found but it does not appear to be a valid Konashi device.
 
-        Raises
-        ------
-        NotFoundError
-            If the device was not found within the timeout time.
-        InvalidDeviceError
-            If the device was found but was not detected as a konashi device.
+        Returns:
+            Konashi: The found Konashi device.
         """
         _konashi = None
         _invalid = False
@@ -115,24 +115,18 @@ class Konashi:
             return _konashi
 
     @staticmethod
-    async def search(timeout: float) -> List[Konashi]:
-        """
-        Scan for konashi devices.
+    async def search(timeout: float=10.0) -> List[Konashi]:
+        """Search for Konashi devices.
+        The search continues for the specified timeout and a list of found devices is returned.
 
-        Parameters
-        ----------
-        timeout : float or None
-            The timeout for the scan in seconds (None will scan indefinitely).
+        Args:
+            timeout (float, optional): The search timeout in seconds, has to be longer than 0s. Defaults to 10.0.
 
-        Returns
-        -------
-        list of Konashi
-            A list of scanned konashi devices.
+        Raises:
+            ValueError: The timeout value is invalid.
 
-        Raises
-        ------
-        ValueError
-            If the timeout value is invalid.
+        Returns:
+            List[Konashi]: A list of discovered Konashi devices.
         """
         if not timeout > 0.0:
             raise ValueError("Timeout should be longer than 0 seconds")
@@ -155,26 +149,23 @@ class Konashi:
         logger.debug("Finished scanning for konashi")
         return _konashi
 
-    async def connect(self, timeout: float) -> None:
-        """
-        Establish the connection with this konashi device.
+    async def connect(self, timeout: float=0.0) -> None:
+        """Connect to this Konashi device.
 
-        Parameters
-        ----------
-        timeout : float or None
-            The timeout for the connection in seconds (None will try indefinitely).
+        If the Konashi class instance was created directly by the user and not returned
+        from ``find`` or ``search``, ``find`` will be called internally before the connection
+        takes place. In this case, the passed timeout value is also used for ``find``.
+        If the Konashi class instance was returned from ``find`` or ``search``, then ``find`` will
+        not be called again.
 
-        Raises
-        ------
-        NotFoundError
-            If the device was not connected to within the timeout time.
-        InvalidDeviceError
-            If the device was not detected as a konashi device.
-        KonashiConnectionError
-            If the connection was attempted but failed.
+        Args:
+            timeout (float, optional): The connection timeout in seconds. Defaults to 0.0.
+
+        Raises:
+            KonashiConnectionError: The Konashi device was found but the connection failed.
+            NotFoundError: The Konashi device was not found within the timeout time.
+            InvalidDeviceError: The specified device name was found but it does not appear to be a valid Konashi device.
         """
-        if not timeout > 0.0:
-            raise ValueError("Timeout should be longer than 0 seconds")
         if self._ble_dev is None:
             try:
                 k = await self.find(self._name, timeout)
@@ -187,6 +178,8 @@ class Konashi:
             self._ble_client = BleakClient(self._ble_dev.address)
         try:
             logger.debug("Connect to device {}".format(self._name))
+            if not timeout > 0.0:
+                timeout = None
             _con = await self._ble_client.connect(timeout=timeout)
         except BleakError as e:
             self._ble_client = None
@@ -197,23 +190,44 @@ class Konashi:
             await self._builtin._on_connect()
 
     async def disconnect(self) -> None:
-        """Disconnect from this konashi device."""
+        """Disconnect from this Konashi device.
+        """
         if self._ble_client is not None:
             await self._ble_client.disconnect()
             self._ble_client = None
 
     @property
     def settings(self) -> Settings:
+        """This Konashi devices Settings interface.
+
+        Returns:
+            Settings: The Konashi device Settings.
+        """
         return self._settings
 
     @property
     def io(self) -> Io:
+        """This Konashi devices I/O interface.
+
+        Returns:
+            Io: The Konashi device I/O.
+        """
         return self._io
 
     @property
     def builtin(self) -> Builtin:
+        """This Konashi devices Built-in interface.
+
+        Returns:
+            Builtin: The Konashi device Built-in.
+        """
         return self._builtin
 
     @property
     def name(self) -> str:
+        """The name (Bluetooth advertising name) of this Konashi device.
+
+        Returns:
+            str: The Konashi device name.
+        """
         return self._name
