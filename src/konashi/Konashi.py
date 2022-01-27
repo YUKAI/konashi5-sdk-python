@@ -11,7 +11,7 @@ from enum import *
 
 from bleak import *
 
-from .Settings import Settings
+from .Settings import _Settings
 from .Io import Io
 from .Builtin import Builtin
 from .Errors import *
@@ -35,7 +35,7 @@ class Konashi:
         self._name = name
         self._ble_dev = None
         self._ble_client = None
-        self._settings: Settings = Settings(self)
+        self._settings: _Settings = _Settings(self)
         self._io: Io = Io(self)
         self._builtin: Builtin = Builtin(self)
 
@@ -197,11 +197,8 @@ class Konashi:
             self._ble_client = None
 
     @property
-    def settings(self) -> Settings:
+    def settings(self) -> _Settings:
         """This Konashi devices Settings interface.
-
-        Returns:
-            Settings: The Konashi device Settings.
         """
         return self._settings
 

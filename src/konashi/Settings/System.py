@@ -31,13 +31,13 @@ class _Command(IntEnum):
     FCT_BTN_EMULATE_PRESS = 5
     FCT_BTN_EMULATE_LONG_PRESS = 6
     FCT_BTN_EMULATE_VERY_LONG_PRESS = 7
-class NvmUse(IntEnum):
+class SystemSettingsNvmUse(IntEnum):
     DISABLED = 0  ## Disable NVM use.
     ENABLED = 1  ## Enable NVM use.
-class NvmSaveTrigger(IntEnum):
+class SystemSettingsNvmSaveTrigger(IntEnum):
     AUTO = 0  ## Automatically save to NVM on config change.
     MANUAL = 1  ## Manually save to NVM.
-class Settings(LittleEndianStructure):
+class _SystemSettings(LittleEndianStructure):
     _pack_ = 1
     _fields_ = [
         ('nvm_use', c_uint8),
@@ -45,9 +45,9 @@ class Settings(LittleEndianStructure):
     ]
     def __str__(self):
         s = "KonashiSettingsSystemSettings("
-        if self.nvm_use == NvmUse.ENABLED:
+        if self.nvm_use == SystemSettingsNvmUse.ENABLED:
             s += "NVM enabled"
-            s += ", NVM save " + ("auto" if self.nvm_save_trigger==NvmSaveTrigger.AUTO else "manual")
+            s += ", NVM save " + ("auto" if self.nvm_save_trigger==SystemSettingsNvmSaveTrigger.AUTO else "manual")
         else:
             s += "NVM disabled"
         s += ")"
@@ -57,13 +57,13 @@ class Settings(LittleEndianStructure):
 class _System(KonashiElementBase._KonashiElementBase):
     def __init__(self, konashi) -> None:
         super().__init__(konashi)
-        self._settings: Settings = Settings()
+        self._settings: _SystemSettings = _SystemSettings()
 
     def __str__(self):
         s = "KonashiSettingsSystem("
-        if self.nvm_use == NvmUse.ENABLED:
+        if self.nvm_use == SystemSettingsNvmUse.ENABLED:
             s += "NVM enabled"
-            s += ", NVM save " + ("auto" if self.nvm_save_trigger==NvmSaveTrigger.AUTO else "manual")
+            s += ", NVM save " + ("auto" if self.nvm_save_trigger==SystemSettingsNvmSaveTrigger.AUTO else "manual")
         else:
             s += "NVM disabled"
         s += ")"
@@ -80,45 +80,66 @@ class _System(KonashiElementBase._KonashiElementBase):
 
     def _ntf_cb_settings(self, sender, data):
         logger.debug("Received settings data: {}".format("".join("{:02x}".format(x) for x in data)))
-        self._settings = Settings.from_buffer_copy(data)
+        self._settings = _SystemSettings.from_buffer_copy(data)
 
 
-    async def get_settings(self) -> Settings:
-        """Get current system settings."""
+    async def get_settings(self) -> _SystemSettings:
+        """Get the current system settings.
+
+        Returns:
+            _SystemSettings: The current system settings.
+                This class has 2 members:
+                    nvm_use: 1 if the NVM is set to be used, 0 otherwise.
+                    nvm_save_trigger: 1 if manual save, 0 if auto save.
+        """
         await self._read(KONASHI_UUID_SYSTEM_SETTINGS_GET)
         return self._settings
 
     async def set_nvm_use(self, enable: bool) -> None:
-        """Enable or disable NVM usage."""
+        """Set if NVM is used or not.
+
+        Args:
+            enable (bool): True to enable, False to disable.
+        """
         b = bytearray([KONASHI_SET_CMD_SYSTEM, _Command.NVM_USE_SET, enable])
         await self._write(KONASHI_UUID_SETTINGS_CMD, b)
 
-    async def set_nvm_save_trigger(self, trigger: NvmSaveTrigger) -> None:
-        """Set NVM save trigger."""
+    async def set_nvm_save_trigger(self, trigger: SystemSettingsNvmSaveTrigger) -> None:
+        """Set the NVM save trigger.
+
+        Args:
+            trigger (SystemSettingsNvmSaveTrigger): ``AUTO`` for automatic save,
+                ``MANUAL`` for manual save (``nvm_save_now`` needs to be called to save).
+        """
         b = bytearray([KONASHI_SET_CMD_SYSTEM, _Command.NVM_SAVE_TRIGGER_SET, trigger])
         await self._write(KONASHI_UUID_SETTINGS_CMD, b)
 
     async def nvm_save_now(self) -> None:
-        """Save all to NVM now."""
+        """Save all to NVM now.
+        """
         b = bytearray([KONASHI_SET_CMD_SYSTEM, _Command.NVM_SAVE_NOW])
         await self._write(KONASHI_UUID_SETTINGS_CMD, b)
 
     async def nvm_erase_now(self) -> None:
-        """Erase all from NVM now."""
+        """Erase all from NVM now.
+        """
         b = bytearray([KONASHI_SET_CMD_SYSTEM, _Command.NVM_ERASE_NOW])
         await self._write(KONASHI_UUID_SETTINGS_CMD, b)
 
     async def emul_press(self) -> None:
-        """Emulate a function button simple press."""
+        """Emulate a function button simple press.
+        """
         b = bytearray([KONASHI_SET_CMD_SYSTEM, _Command.FCT_BTN_EMULATE_PRESS])
         await self._write(KONASHI_UUID_SETTINGS_CMD, b)
 
     async def emul_long_press(self) -> None:
-        """Emulate a function button long press."""
+        """Emulate a function button long press.
+        """
         b = bytearray([KONASHI_SET_CMD_SYSTEM, _Command.FCT_BTN_EMULATE_LONG_PRESS])
         await self._write(KONASHI_UUID_SETTINGS_CMD, b)
 
     async def emul_very_long_press(self) -> None:
-        """Emulate a function button very long press."""
+        """Emulate a function button very long press.
+        """
         b = bytearray([KONASHI_SET_CMD_SYSTEM, _Command.FCT_BTN_EMULATE_VERY_LONG_PRESS])
         await self._write(KONASHI_UUID_SETTINGS_CMD, b)

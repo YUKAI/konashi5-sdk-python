@@ -23,22 +23,22 @@ KONASHI_SET_CMD_BLUETOOTH = 0x02
 KONASHI_UUID_BLUETOOTH_SETTINGS_GET = "064d0103-8251-49d9-b6f3-f7ba35e5d0a1"
 
 
-class Function(IntEnum):
+class BluetoothSettingsFunction(IntEnum):
     MESH = 0
     EX_ADVERTISER = 1
-class PrimaryPhy(IntEnum):
+class BluetoothSettingsPrimaryPhy(IntEnum):
     ONE_M_PHY = 0x01
     CODED_PHY = 0x04
-class SecondaryPhy(IntEnum):
+class BluetoothSettingsSecondaryPhy(IntEnum):
     ONE_M_PHY = 0x01
     TWO_M_PHY = 0x02
     CODED_PHY = 0x04
-class ConnectionPhy(IntFlag):
+class BluetoothSettingsConnectionPhy(IntFlag):
     ONE_M_PHY_UNCODED  = 0x01
     TWO_M_PHY_UNCODED  = 0x02
     CODED_PHY_125k     = 0x04
     CODED_PHY_500k     = 0x08
-class ExAdvertiseContents(IntFlag):
+class BluetoothSettingsExAdvertiseContents(IntFlag):
     NONE         = 0x00000000
     DEVICE_NAME  = 0x01000000
     UUID128      = 0x02000000
@@ -57,7 +57,12 @@ class ExAdvertiseContents(IntFlag):
     AIO1_IN      = 0x00002000
     AIO0_IN      = 0x00001000
     AIO_IN_ALL   = 0x00007000
-class Settings(LittleEndianStructure):
+class BluetoothSettingsExAdvertiseStatus(IntEnum):
+    DISABLED  = 0x0
+    LEGACY    = 0x1
+    EXTENDED  = 0x2
+    ERROR     = 0xF
+class _BluetoothSettings(LittleEndianStructure):
     _pack_ = 1
     _fields_ = [
         ('enabled_functions', c_uint8),
@@ -84,7 +89,7 @@ class Settings(LittleEndianStructure):
 class _Bluetooth(KonashiElementBase._KonashiElementBase):
     def __init__(self, konashi) -> None:
         super().__init__(konashi)
-        self._settings: Settings = Settings()
+        self._settings: _BluetoothSettings = _BluetoothSettings()
 
     def __str__(self):
         s = "KonashiSettingsBluetooth("
@@ -119,35 +124,72 @@ class _Bluetooth(KonashiElementBase._KonashiElementBase):
     def _ntf_cb_settings(self, sender, data):
         logger.debug("Received settings data: {}".format("".join("{:02x}".format(x) for x in data)))
         data[3:7] = data[-1:]+data[-2:-1]+data[-3:-2]+data[-4:-3]
-        self._settings = Settings.from_buffer_copy(data)
+        self._settings = _BluetoothSettings.from_buffer_copy(data)
 
 
-    async def get_settings(self) -> Settings:
-        """Get current bluetooth settings."""
+    async def get_settings(self) -> _BluetoothSettings:
+        """Get the current Bluetooth settings.
+
+        Returns:
+            _BluetoothSettings: The current bluetooth settings.
+                This class has 7 members:
+                    enabled_functions: A bitmask of enabled Bluetooth functions, see ``BluetoothSettingsFunction``.
+                    main_conn_pref_phy: The main connection preferred PHY, see ``BluetoothSettingsConnectionPhy``.
+                    main_adv_sec_phy: The main advertising secondary PHY, see ``BluetoothSettingsSecondaryPhy``.
+                    ex_adv_sec_phy: The secondary advertiser secondary PHY, see ``BluetoothSettingsSecondaryPhy``.
+                    ex_adv_prim_phy: The secondary advertiser primary PHY, see ``BluetoothSettingsPrimaryPhy``.
+                    ex_adv_contents: A bitmask of the secondary advertiser contents, see ``BluetoothSettingsExAdvertiseContents``.
+                    ex_adv_status: The secondary advertiser status, see ``BluetoothSettingsExAdvertiseStatus``.
+        """
         await self._read(KONASHI_UUID_BLUETOOTH_SETTINGS_GET)
         return self._settings
 
-    async def enable_function(self, function: Function, enable: bool) -> None:
-        """Enable or disable a Bluetooth functionality."""
+    async def enable_function(self, function: BluetoothSettingsFunction, enable: bool) -> None:
+        """Enable or disable a Bluetooth functionality.
+
+        Args:
+            function (BluetoothSettingsFunction): The function to enable or disable.
+            enable (bool): True to enable, False to disable.
+        """
         b = bytearray([KONASHI_SET_CMD_BLUETOOTH, (function<<4)+enable])
         await self._write(KONASHI_UUID_SETTINGS_CMD, b)
 
-    async def set_main_adv_sec_phy(self, phy: SecondaryPhy) -> None:
-        """Set the main advertiser Secondary PHY."""
+    async def set_main_adv_sec_phy(self, phy: BluetoothSettingsSecondaryPhy) -> None:
+        """Set the main advertiser Secondary PHY.
+
+        Args:
+            phy (BluetoothSettingsSecondaryPhy): The secondary PHY type.
+        """
         b = bytearray([KONASHI_SET_CMD_BLUETOOTH, 0xF0+phy])
         await self._write(KONASHI_UUID_SETTINGS_CMD, b)
 
-    async def set_main_preferred_conn_phy(self, phy: ConnectionPhy) -> None:
-        """Set the main Preferred Connection PHY."""
+    async def set_main_preferred_conn_phy(self, phy: BluetoothSettingsConnectionPhy) -> None:
+        """Set the main preferred connection PHYs.
+        Multiple preferred PHYs can be set in the form of a bitmask.
+
+        Args:
+            phy (BluetoothSettingsConnectionPhy): The preferred connection PHYs
+        """
         b = bytearray([KONASHI_SET_CMD_BLUETOOTH, 0xE0+phy])
         await self._write(KONASHI_UUID_SETTINGS_CMD, b)
 
-    async def set_ex_adv_phy(self, prim_phy: PrimaryPhy, sec_phy: SecondaryPhy) -> None:
-        """Set the extra advertiser Primary and Secondary PHYs."""
+    async def set_ex_adv_phy(self, prim_phy: BluetoothSettingsPrimaryPhy, sec_phy: BluetoothSettingsSecondaryPhy) -> None:
+        """Set the secondary advertiser primary and secondary PHYs.
+
+        Args:
+            prim_phy (BluetoothSettingsPrimaryPhy): The primary PHY.
+            sec_phy (BluetoothSettingsSecondaryPhy): The secondary PHY.
+        """
         b = bytearray([KONASHI_SET_CMD_BLUETOOTH, 0xD0+prim_phy, 0xC0+sec_phy])
         await self._write(KONASHI_UUID_SETTINGS_CMD, b)
 
-    async def set_ex_adv_contents(self, contents: ExAdvertiseContents) -> None:
-        """Set the extra advertiser contents."""
+    async def set_ex_adv_contents(self, contents: BluetoothSettingsExAdvertiseContents) -> None:
+        """Set the secondary advertiser advertising contents.
+        If the resulting advertising data length is longer than 31 bytes,
+        advertising will automatically be in extended mode, otherwise it will be legacy mode.
+
+        Args:
+            contents (BluetoothSettingsExAdvertiseContents): A mask of the contents to show.
+        """
         b = bytearray([KONASHI_SET_CMD_BLUETOOTH, 0xB0+((contents>>24)&0x0F), (contents>>16)&0xFF, (contents>>8)&0xFF, (contents>>0)&0xFF])
         await self._write(KONASHI_UUID_SETTINGS_CMD, b)
