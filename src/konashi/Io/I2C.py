@@ -30,17 +30,23 @@ KONASHI_UUID_I2C_DATA_IN = "064d0308-8251-49d9-b6f3-f7ba35e5d0a1"
 
 KONASHI_I2C_SDA_PINNB = 6
 KONASHI_I2C_SCL_PINNB = 7
-class Mode(IntEnum):
+class I2CMode(IntEnum):
     STANDARD = 0
     FAST = 1
-class Config(LittleEndianStructure):
+class I2CConfig(LittleEndianStructure):
     _pack_ = 1
     _fields_ = [
         ('mode', c_uint8, 1),
         ('enabled', c_uint8, 1),
         ('', c_uint8, 6)
     ]
-    def __init__(self, enable: bool, mode: Mode) -> None:
+    def __init__(self, enable: bool, mode: I2CMode) -> None:
+        """I2C configuration.
+
+        Args:
+            enable (bool): True to enable, False to disable.
+            mode (I2CMode): The I2C mode.
+        """
         self.enabled = enable
         self.mode = mode
     def __str__(self):
@@ -50,20 +56,20 @@ class Config(LittleEndianStructure):
         else:
             s += "disabled"
         s += ", mode:"
-        if self.mode == Mode.STANDARD:
+        if self.mode == I2CMode.STANDARD:
             s += "standard"
-        elif self.mode == Mode.FAST:
+        elif self.mode == I2CMode.FAST:
             s += "fast"
         else:
             s += "unknown"
         s += ")"
         return s
 
-class Operation(IntEnum):
+class I2COperation(IntEnum):
     WRITE = 0
     READ = 1
     WRITE_READ = 2
-class Result(IntEnum):
+class I2CResult(IntEnum):
     DONE = 0  # Transfer completed successfully.
     NACK = 1  # NACK received during transfer.
     BUS_ERR = 2  # Bus error during transfer (misplaced START/STOP).
@@ -76,7 +82,7 @@ class _I2C(KonashiElementBase._KonashiElementBase):
     def __init__(self, konashi, gpio) -> None:
         super().__init__(konashi)
         self._gpio = gpio
-        self._config = Config(False, Mode.STANDARD)
+        self._config = I2CConfig(False, I2CMode.STANDARD)
         self._async_loop = None
         self._data_in_future = None
 
@@ -95,7 +101,7 @@ class _I2C(KonashiElementBase._KonashiElementBase):
 
     def _ntf_cb_config(self, sender, data):
         logger.debug("Received config data: {}".format("".join("{:02x}".format(x) for x in data)))
-        self._config = Config.from_buffer_copy(data)
+        self._config = I2CConfig.from_buffer_copy(data)
 
     def _ntf_cb_data_in(self, sender, data):
         logger.debug("Received input data: {}".format("".join("{:02x}".format(x) for x in data)))
@@ -103,68 +109,56 @@ class _I2C(KonashiElementBase._KonashiElementBase):
             self._async_loop.call_soon_threadsafe(self._data_in_future.set_result, data)
 
 
-    async def config(self, config: Config) -> None:
-        """
-        Configure the I2C peripheral.
+    async def config(self, config: I2CConfig) -> None:
+        """Configure I2C.
 
-        Parameters
-        ----------
-        config : Config
-            The configuration.
+        Args:
+            config (I2CConfig): The configuration.
 
-        Raises
-        ------
-        PinUnavailableError
-            If a pin is already configured with a function other than I2C.
+        Raises:
+            PinUnavailableError: One of the I2C pins is set to another function.
         """
         if config.enabled:
-            if self._gpio._config[KONASHI_I2C_SDA_PINNB].function != int(Gpio.PinFunction.DISABLED) and self._gpio._config[KONASHI_I2C_SDA_PINNB].function != int(Gpio.PinFunction.I2C):
+            if self._gpio._config[KONASHI_I2C_SDA_PINNB].function != int(Gpio.GpioPinFunction.DISABLED) and self._gpio._config[KONASHI_I2C_SDA_PINNB].function != int(Gpio.GpioPinFunction.I2C):
                 raise PinUnavailableError(f'Pin {KONASHI_I2C_SDA_PINNB} is already configured as {Gpio._KONASHI_GPIO_FUNCTION_STR[self._gpio._config[KONASHI_I2C_SDA_PINNB].function]}')
-            if self._gpio._config[KONASHI_I2C_SCL_PINNB].function != int(Gpio.PinFunction.DISABLED) and self._gpio._config[KONASHI_I2C_SCL_PINNB].function != int(Gpio.PinFunction.I2C):
+            if self._gpio._config[KONASHI_I2C_SCL_PINNB].function != int(Gpio.GpioPinFunction.DISABLED) and self._gpio._config[KONASHI_I2C_SCL_PINNB].function != int(Gpio.GpioPinFunction.I2C):
                 raise PinUnavailableError(f'Pin {KONASHI_I2C_SCL_PINNB} is already configured as {Gpio._KONASHI_GPIO_FUNCTION_STR[self._gpio._config[KONASHI_I2C_SCL_PINNB].function]}')
         b = bytearray([KONASHI_CFG_CMD_I2C]) + bytearray(config)
         await self._write(KONASHI_UUID_CONFIG_CMD, b)
 
-    async def get_config(self) -> Config:
-        """Returns the current configuration."""
+    async def get_config(self) -> I2CConfig:
+        """Get the current I2C configuration
+
+        Returns:
+            I2CConfig: The I2C configuration.
+        """
         await self._read(KONASHI_UUID_I2C_CONFIG_GET)
         return self._config
 
-    async def transaction(self, operation: Operation, address: int, read_len: int, write_data: bytes) -> Tuple[Result, int, bytes]:
-        """
-        Run an I2C transaction.
+    async def transaction(self, operation: I2COperation, address: int, read_len: int, write_data: bytes) -> Tuple[I2CResult, int, bytes]:
+        """Perform an I2C transaction.
 
-        Parameters
-        ----------
-        operation : Operation
-            The transaction operation.
-        address : int
-            The unshifted I2C slave address (valid range: 0x00 ~ 0x7F).
-        read_len : int
-            The length of the data to read (valid range: 0 ~ 126).
-        write_data : bytes
-            The data to write (length range: 0 ~ 124).
+        Args:
+            operation (I2COperation): The transaction operation.
+            address (int): The I2C slave address (address range is 0x00 to 0x7F).
+            read_len (int): The length of the data to read (0 to 126 bytes).
+            write_data (bytes): The data to write (valid length 0 to 124 bytes).
 
-        Returns
-        -------
-        result : Result
-            The operation result.
-        address : int
-            The slave address.
-        data : bytes
-            The read data.
+        Returns:
+            Tuple[I2CResult, int, bytes]: result, address, bytes.
+                I2CResult: The transaction result.
+                int: The transaction slave address.
+                bytes: The read data (if there is no read data, the length will be 0).
 
-        Raises
-        ------
-        ValueError
-            If the read length or address is out of range or write data is too long.
+        Raises:
+            ValueError: The read length or slave address is out of range, or the write data is too long.
         """
         if read_len > 126:
-            ValueError("Maximum read length is 126 bytes")
+            raise ValueError("Maximum read length is 126 bytes")
         if address > 0x7F:
-            ValueError("The I2C address should be in the range [0x01,0x7F]")
+            raise ValueError("The I2C address should be in the range [0x01,0x7F]")
         if len(write_data) > 124:
-            ValueError("Maximum write data length is 124 bytes")
+            raise ValueError("Maximum write data length is 124 bytes")
         b = bytearray([KONASHI_CTL_CMD_I2C_DATA, operation, read_len, address]) + bytearray(write_data)
         self._async_loop = asyncio.get_event_loop()
         self._data_in_future = self._async_loop.create_future()
@@ -172,5 +166,5 @@ class _I2C(KonashiElementBase._KonashiElementBase):
         res = await self._data_in_future
         self._async_loop = None
         self._data_in_future = None
-        ret = (Result(res[0]), res[1], res[2:])
+        ret = (I2CResult(res[0]), res[1], res[2:])
         return ret

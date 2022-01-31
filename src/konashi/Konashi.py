@@ -12,7 +12,7 @@ from enum import *
 from bleak import *
 
 from .Settings import _Settings
-from .Io import Io
+from .Io import _Io
 from .Builtin import Builtin
 from .Errors import *
 
@@ -36,7 +36,7 @@ class Konashi:
         self._ble_dev = None
         self._ble_client = None
         self._settings: _Settings = _Settings(self)
-        self._io: Io = Io(self)
+        self._io: _Io = _Io(self)
         self._builtin: Builtin = Builtin(self)
 
     def __str__(self):
@@ -203,11 +203,8 @@ class Konashi:
         return self._settings
 
     @property
-    def io(self) -> Io:
+    def io(self) -> _Io:
         """This Konashi devices I/O interface.
-
-        Returns:
-            Io: The Konashi device I/O.
         """
         return self._io
 

@@ -28,16 +28,16 @@ KONASHI_UUID_UART_DATA_IN = "064d0309-8251-49d9-b6f3-f7ba35e5d0a1"
 KONASHI_UUID_UART_DATA_SEND_DONE = "064d030a-8251-49d9-b6f3-f7ba35e5d0a1"
 
 
-class Parity(IntEnum):
+class UARTParity(IntEnum):
     NONE = 0
     ODD = 1
     EVEN = 2
-class StopBits(IntEnum):
+class UARTStopBits(IntEnum):
     HALF = 0
     ONE = 1
     ONEANDAHALF = 2
     TWO = 3
-class Config(LittleEndianStructure):
+class UARTConfig(LittleEndianStructure):
     _pack_ = 1
     _fields_ = [
         ('stop_bits', c_uint8, 2),
@@ -46,7 +46,16 @@ class Config(LittleEndianStructure):
         ('enabled', c_uint8, 1),
         ('baudrate', c_uint32)
     ]
-    def __init__(self, enable: bool, baudrate: int, parity: Parity, stop_bits: StopBits) -> None:
+    def __init__(self, enable: bool, baudrate: int=0, parity: UARTParity=UARTParity.NONE, stop_bits: UARTStopBits=UARTStopBits.ONE) -> None:
+        """UART configuration.
+        When enabling, please always spcify the baudrate, parity and stop bits. When disabling, they can be left as default.
+
+        Args:
+            enable (bool): True to enable, False to disable.
+            baudrate (int, optional): The UART baudrate. Defaults to 0.
+            parity (UARTParity, optional): The UART parity. Defaults to UARTParity.NONE.
+            stop_bits (UARTStopBits, optional): The UART number of stop bits. Defaults to UARTStopBits.ONE.
+        """
         self.enabled = enable
         self.baudrate = baudrate
         self.parity = parity
@@ -58,19 +67,19 @@ class Config(LittleEndianStructure):
         else:
             s += "disabled"
         s += ", "+str(self.baudrate)
-        if self.parity == Parity.NONE:
+        if self.parity == UARTParity.NONE:
             s += ", No parity"
-        elif self.parity == Parity.ODD:
+        elif self.parity == UARTParity.ODD:
             s += ", Odd parity"
-        elif self.parity == Parity.EVEN:
+        elif self.parity == UARTParity.EVEN:
             s += ", Even parity"
-        if self.stop_bits == StopBits.HALF:
+        if self.stop_bits == UARTStopBits.HALF:
             s += ", 0.5 stop bits"
-        elif self.stop_bits == StopBits.ONE:
+        elif self.stop_bits == UARTStopBits.ONE:
             s += ", 1 stop bit"
-        elif self.stop_bits == StopBits.ONEANDAHALF:
+        elif self.stop_bits == UARTStopBits.ONEANDAHALF:
             s += ", 1.5 stop bits"
-        elif self.stop_bits == StopBits.TWO:
+        elif self.stop_bits == UARTStopBits.TWO:
             s += ", 2 stop bits"
         s += ")"
         return s
@@ -79,7 +88,7 @@ class Config(LittleEndianStructure):
 class _UART(KonashiElementBase._KonashiElementBase):
     def __init__(self, konashi) -> None:
         super().__init__(konashi)
-        self._config = Config(False, 0, Parity.NONE, StopBits.ONE)
+        self._config = UARTConfig(False, 0, UARTParity.NONE, UARTStopBits.ONE)
         self._async_loop = None
         self._send_done_future = None
         self._data_in_cb = None
@@ -100,7 +109,7 @@ class _UART(KonashiElementBase._KonashiElementBase):
 
     def _ntf_cb_config(self, sender, data):
         logger.debug("Received config data: {}".format("".join("{:02x}".format(x) for x in data)))
-        self._config = Config.from_buffer_copy(data)
+        self._config = UARTConfig.from_buffer_copy(data)
 
     def _ntf_cb_data_in(self, sender, data):
         logger.debug("Received input data: {}".format("".join("{:02x}".format(x) for x in data)))
@@ -113,52 +122,50 @@ class _UART(KonashiElementBase._KonashiElementBase):
             self._async_loop.call_soon_threadsafe(self._send_done_future.set_result, data)
 
 
-    async def config(self, config: Config) -> None:
-        """Configure the UART peripheral."""
+    async def config(self, config: UARTConfig) -> None:
+        """Configure the UART peripheral.
+
+        Args:
+            config (UARTConfig): The configuration.
+        """
         b = bytearray([KONASHI_CFG_CMD_UART]) + bytearray(config)
         await self._write(KONASHI_UUID_CONFIG_CMD, b)
 
-    async def get_config(self) -> Config:
-        """Returns the current UART configuration."""
+    async def get_config(self) -> UARTConfig:
+        """Get the current UART configuration.
+
+        Returns:
+            UARTConfig: The UART configuration.
+        """
         await self._read(KONASHI_UUID_UART_CONFIG_GET)
         return self._config
 
     def set_data_in_cb(self, callback: Callable[[bytes], None]) -> None:
-        """
-        Set a callback for input data reception.
+        """Set a callback for received UART data.
 
-        Parameters
-        ----------
-        callback : callable
-            The input callback function.
-            The function takes 1 parameter and returns nothing:
-                data: bytes. The received data.
+        Args:
+            callback (Callable[[bytes], None]): The callback.
+                The function takes 1 parameter and return nothing:
+                    bytes: The received data. 
         """
         self._data_in_cb = callback
 
     async def send(self, write_data: bytes) -> bool:
-        """
-        Send data.
+        """Send UART data.
 
-        Parameters
-        ----------
-        write_data : bytes
-            The data to send (length range: 1 ~ 127)
+        Args:
+            write_data (bytes): The data to send (length range is [1,127]).
 
-        Returns
-        -------
-        bool
-            The success or failure of the send.
+        Raises:
+            ValueError: The write data length is out of range.
 
-        Raises
-        ------
-        ValueError
-            If the write data is empty or too long.
+        Returns:
+            bool: True if successful, False otherwise.
         """
         if len(write_data) == 0:
-            ValueError("Write data buffer cannot be empty")
+            raise ValueError("Write data buffer cannot be empty")
         if len(write_data) > 127:
-            ValueError("Maximum write data length is 127 bytes")
+            raise ValueError("Maximum write data length is 127 bytes")
         b = bytearray([KONASHI_CTL_CMD_UART_DATA]) + bytearray(write_data)
         self._async_loop = asyncio.get_event_loop()
         self._send_done_future = self._async_loop.create_future()

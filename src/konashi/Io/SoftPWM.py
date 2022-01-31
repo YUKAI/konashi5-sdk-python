@@ -30,56 +30,53 @@ KONASHI_UUID_SOFTPWM_OUTPUT_GET = "064d0304-8251-49d9-b6f3-f7ba35e5d0a1"
 
 KONASHI_SOFTPWM_COUNT = 4
 KONASHI_SOFTPWM_PIN_TO_GPIO_NUM = [4, 5, 6, 7]
-class ControlType(IntEnum):
+class SoftPWMControlType(IntEnum):
     DISABLED = 0
     DUTY = 1
     PERIOD = 2
-class PinConfig(LittleEndianStructure):
+class SoftPWMPinConfig(LittleEndianStructure):
     _pack_ = 1
     _fields_ = [
         ('control_type', c_uint8, 4),
         ('', c_uint8, 4),
         ('fixed_value', c_uint16)
     ]
-    def __init__(self, control_type: ControlType, fixed_value: int=0):
-        """
-        Parameters
-        ----------
-        control_type : ControlType
-            The control type for the pin.
-        fixed_value : int 
-            The fixed value.
-            If the control type is DUTY, this is the fixed period in units of 1ms (valid range: [0,65535]).
-            If the control type is PERIOD, this is the fixed duty cycle in units of 0.1% (valid range: [0,1000]).
+    def __init__(self, control_type: SoftPWMControlType, fixed_value: int=0):
+        """Software PWM pin configuration.
 
-        Raises
-        ------
-        ValueError
-            If the fixed value is out of range.
+        Args:
+            control_type (SoftPWMControlType): The PWM control type.
+            fixed_value (int, optional): The fixed value.
+                If the control type is ``DUTY``, this is the fixed period in milliseconds (valid range is [0,65535]).
+                If the control type is ``PERIDO``, this is the fixed duty cycle in 0.1% (valid range is [0,1000]).
+                Defaults to 0.
+
+        Raises:
+            ValueError: The fixed value is out of range.
         """
         self.control_type = int(control_type)
-        if control_type == ControlType.DUTY:
+        if control_type == SoftPWMControlType.DUTY:
             if fixed_value < 0 or fixed_value > 65535:
                 raise ValueError("The valid range for the fixed period is [0,65535] (unit: 1ms)")
-        elif control_type == ControlType.PERIOD:
+        elif control_type == SoftPWMControlType.PERIOD:
             if fixed_value < 0 or fixed_value > 1000:
                 raise ValueError("The valid range for the fixed duty cycle is [0,1000] (unit: 0.1%)")
         self.fixed_value = fixed_value
     def __str__(self):
         s = "KonashiSoftPWMPinConfig("
-        s += "DUTY control" if self.control_type==ControlType.DUTY else "PERIOD control" if self.control_type==ControlType.PERIOD else "DISABLED"
-        if self.control_type != ControlType.DISABLED:
+        s += "DUTY control" if self.control_type==SoftPWMControlType.DUTY else "PERIOD control" if self.control_type==SoftPWMControlType.PERIOD else "DISABLED"
+        if self.control_type != SoftPWMControlType.DISABLED:
             s += ", "
             s += str(self.fixed_value*0.1)
-            if self.control_type == ControlType.DUTY:
+            if self.control_type == SoftPWMControlType.DUTY:
                 s += "ms fixed period"
             else:
                 s += r"% fixed duty cycle"
         s += ")"
         return s
-_PinsConfig = PinConfig*KONASHI_SOFTPWM_COUNT
+_PinsConfig = SoftPWMPinConfig*KONASHI_SOFTPWM_COUNT
 
-class PinControl(LittleEndianStructure):
+class SoftPWMPinControl(LittleEndianStructure):
     _pack_ = 1
     _fields_ = [
         ('control_type', c_uint8, 4),
@@ -88,20 +85,16 @@ class PinControl(LittleEndianStructure):
         ('transition_duration', c_uint32)
     ]
     def __init__(self, control_value: int, transition_duration: int=0):
-        """
-        Parameters
-        ----------
-        control_value : int
-            The control value to apply to the pin.
-            If the control type for the pin is DUTY, this is the duty cycle control value in units of 0.1% (valid range: [0,1000]).
-            if the control type for the pin is PERIOD, this is the period control value in units of 1ms (valid range: [0,65535]).
-        transition_duration : int, optional
-            Duration to reach the target value in untis of 1ms (valid range: [0,4294967295]).
+        """Software PWM pin control.
 
-        Raises
-        ------
-        ValueError
-            If the control value or the duration is out of range.
+        Args:
+            control_value (int): The control value to set.
+                If the control type is ``DUTY``, this is the duty cycle control value in 0.1% (valid range is [0,1000]).
+                If the control type id ``PERIOD``, this is the period control value in milliseconds (valid range is [0,65535]).
+            transition_duration (int, optional): The transition duration in milliseconds (valid range is [0,4294967295]). Defaults to 0.
+
+        Raises:
+            ValueError: The control value or the transition duration is out of range.
         """
         if control_value < 0 or control_value > 65535:
             raise ValueError("The valid range for the control value is [0,65535]")
@@ -112,18 +105,18 @@ class PinControl(LittleEndianStructure):
         self.control_type = 0
     def __str__(self):
         s = "KonashiSoftPWMPinControl("
-        if self.control_type == ControlType.DISABLED:
+        if self.control_type == SoftPWMControlType.DISABLED:
             s += "DISABLED, Control value "+str(self.control_value)+" raw, Transition duration "+str(self.transition_duration)+"ms"
         else:
             s += str(int(self.control_value*0.1))
-            if self.control_type == ControlType.PERIOD:
+            if self.control_type == SoftPWMControlType.PERIOD:
                 s += "ms period"
             else:
                 s += r"% duty cycle"
             s += ", Transition duration "+str(self.transition_duration)+"ms"
         s += ")"
         return s
-_PinsControl = PinControl*KONASHI_SOFTPWM_COUNT
+_PinsControl = SoftPWMPinControl*KONASHI_SOFTPWM_COUNT
 
 
 class _SoftPWM(KonashiElementBase._KonashiElementBase):
@@ -163,7 +156,7 @@ class _SoftPWM(KonashiElementBase._KonashiElementBase):
                     self._trans_end_cb(i, self._output[i].control_type, self._output[i].control_value)
 
 
-    async def config_pins(self, configs: Sequence(Tuple[int, PinConfig])) -> None:
+    async def config_pins(self, configs: Sequence(Tuple[int, SoftPWMPinConfig])) -> None:
         """
         Configure pins.
 
@@ -179,17 +172,35 @@ class _SoftPWM(KonashiElementBase._KonashiElementBase):
         PinUnavailableError
             If a pin is already configured with a function other than SoftPWM.
         """
+        """Configure the specified Software PWM pins.
+
+        Args:
+            configs (Sequence[Tuple[int, SoftPWMPinConfig]]): The list of pin configurations.
+                For each Tuple:
+                    int: A bitmask of the pins to apply the configuration to.
+                    SoftPWMPinConfig: The configuration for the specified pins.
+
+        Raises:
+            PinUnavailableError: At least one of the specified is already configured with another function.
+        """
         b = bytearray([KONASHI_CFG_CMD_SOFTPWM])
         for config in configs:
             for i in range(KONASHI_SOFTPWM_COUNT):
                 if (config[0]&(1<<i)) > 0:
-                    if self._gpio._config[KONASHI_SOFTPWM_PIN_TO_GPIO_NUM[i]].function != int(Gpio.PinFunction.DISABLED) and self._gpio._config[KONASHI_SOFTPWM_PIN_TO_GPIO_NUM[i]].function != int(Gpio.PinFunction.PWM):
+                    if self._gpio._config[KONASHI_SOFTPWM_PIN_TO_GPIO_NUM[i]].function != int(Gpio.GpioPinFunction.DISABLED) and self._gpio._config[KONASHI_SOFTPWM_PIN_TO_GPIO_NUM[i]].function != int(Gpio.GpioPinFunction.PWM):
                         raise PinUnavailableError(f'Pin {KONASHI_SOFTPWM_PIN_TO_GPIO_NUM[i]} is already configured as {Gpio._KONASHI_GPIO_FUNCTION_STR[self._gpio._config[KONASHI_SOFTPWM_PIN_TO_GPIO_NUM[i]].function]}')
                     b.extend(bytearray([(i<<4)|(bytes(config[1])[0])]) + bytearray(config[1])[1:3])
         await self._write(KONASHI_UUID_CONFIG_CMD, b)
 
-    async def get_pins_config(self, pin_bitmask: int) -> List[PinConfig]:
-        """Returns a list of configurations for the pins specified in the bitmask."""
+    async def get_pins_config(self, pin_bitmask: int) -> List[SoftPWMPinConfig]:
+        """Get the configuration of the specified pins.
+
+        Args:
+            pin_bitmask (int): A bitmask of the pins to get the configuration for.
+
+        Returns:
+            List[SoftPWMPinConfig]: The configuration of the specified pins.
+        """
         await self._read(KONASHI_UUID_SOFTPWM_CONFIG_GET)
         l = []
         for i in range(KONASHI_SOFTPWM_COUNT):
@@ -197,21 +208,19 @@ class _SoftPWM(KonashiElementBase._KonashiElementBase):
                 l.append(self._config[i])
         return l
 
-    def set_transition_end_cb(self, notify_callback: Callable[[int, ControlType, int], None]) -> None:
-        """
-        Set a transition end callback function.
-        The function will be called when SoftPWM value transition is completed.
+    def set_transition_end_cb(self, notify_callback: Callable[[int, SoftPWMControlType, int], None]) -> None:
+        """Set a transition end callback function.
 
-        Parameters
-        ----------
-        notify_callback : callable
-            The input callback function.
-            The function takes 1 parameter and returns nothing:
-                pin: int. The pin number.
+        Args:
+            notify_callback (Callable[[int, SoftPWMControlType, int], None]): The callback function.
+                The function takes 3 parameters and returns nothing:
+                    int: The pin number.
+                    SoftPWMControlType: The pins control type.
+                    int: The current control value.
         """
         self._trans_end_cb = notify_callback
 
-    async def control_pins(self, controls: Sequence(Tuple[int, PinControl])) -> None:
+    async def control_pins(self, controls: Sequence(Tuple[int, SoftPWMPinControl])) -> None:
         """
         Control pins.
 
@@ -229,17 +238,40 @@ class _SoftPWM(KonashiElementBase._KonashiElementBase):
         ValueError
             If the control value in PinControl is out of range.
         """
+        """Control Hardware PWM pins.
+
+        Args:
+            controls (Sequence[Tuple[int, HardPWMPinControl]]): A list of pin controls.
+                For each Tuple:
+                    int: A bitmask of the pins to apply the control to.
+                    HardPWMPinControl: The control for the specified pins.
+
+        Raises:
+            PinUnavailableError: At least one pin is not configured as a Hardware PWM pin.
+        """
+        """Control Software PWM pins.
+
+        Args:
+            controls (Sequence[Tuple[int, SoftPWMPinControl]]): A list of pin controls.
+                For each Tuple:
+                    int: A bitmask of the pins to apply the control to.
+                    SoftPWMPinControl: The control for the specified pins.
+
+        Raises:
+            PinUnavailableError: At least one pin is not configured as a Software PWM pin.
+            ValueError: The control value is out of range.
+        """
         ongoing_control = []
         b = bytearray([KONASHI_CTL_CMD_SOFTPWM])
         for control in controls:
             for i in range(KONASHI_SOFTPWM_COUNT):
                 if (control[0]&(1<<i)) > 0:
-                    if self._gpio._config[KONASHI_SOFTPWM_PIN_TO_GPIO_NUM[i]].function != int(Gpio.PinFunction.PWM):
+                    if self._gpio._config[KONASHI_SOFTPWM_PIN_TO_GPIO_NUM[i]].function != int(Gpio.GpioPinFunction.PWM):
                         raise PinUnavailableError(f'Pin {KONASHI_SOFTPWM_PIN_TO_GPIO_NUM[i]} is not configured as PWM (configured as {Gpio._KONASHI_GPIO_FUNCTION_STR[self._gpio._config[KONASHI_SOFTPWM_PIN_TO_GPIO_NUM[i]].function]})')
-                    if self._config[i].control_type == int(ControlType.DUTY):
+                    if self._config[i].control_type == int(SoftPWMControlType.DUTY):
                         if control[1].control_value < 0 or control[1].control_value > 1000:
                             raise ValueError("The valid range for the duty cycle control is [0,1000] (unit: 0.1%)")
-                    elif self._config[i].control_type == int(ControlType.PERIOD):
+                    elif self._config[i].control_type == int(SoftPWMControlType.PERIOD):
                         if control[1].control_value < 0 or control[1].control_value > 65535:
                             raise ValueError("The valid range for the period control is [0,65535] (unit: 1ms)")
                     else:
@@ -251,8 +283,15 @@ class _SoftPWM(KonashiElementBase._KonashiElementBase):
             if i not in self._ongoing_control:
                 self._ongoing_control.append(i)
 
-    async def get_pins_control(self, pin_bitmask: int) -> List[PinControl]:
-        """Returns a list of output controls for the pins specified in the bitmask."""
+    async def get_pins_control(self, pin_bitmask: int) -> List[SoftPWMPinControl]:
+        """Get the output control of the specified pins.
+
+        Args:
+            pin_bitmask (int): A bitmask of the pins to get the output control for.
+
+        Returns:
+            List[SoftPWMPinControl]: The output control of the specified pins.
+        """
         await self._read(KONASHI_UUID_SOFTPWM_OUTPUT_GET)
         l = []
         for i in range(KONASHI_SOFTPWM_COUNT):

@@ -11,7 +11,7 @@ from . import UART
 from . import SPI
 
 
-class Io:
+class _Io:
     def __init__(self, konashi):
         self._gpio = Gpio._Gpio(konashi)
         self._softpwm = SoftPWM._SoftPWM(konashi, self._gpio)
@@ -23,30 +23,44 @@ class Io:
 
     @property
     def gpio(self) -> Gpio._Gpio:
+        """This Konashi devices GPIO interface.
+        """
         return self._gpio
 
     @property
     def softpwm(self) -> SoftPWM._SoftPWM:
+        """This Konashi devices Software PWM interface.
+        """
         return self._softpwm
 
     @property
     def hardpwm(self) -> HardPWM._HardPWM:
+        """This Konashi devices Hardware PWM interface.
+        """
         return self._hardpwm
 
     @property
     def analog(self) -> Analog._Analog:
+        """This Konashi devices Analog interface.
+        """
         return self._analog
 
     @property
     def i2c(self) -> I2C._I2C:
+        """This Konashi devices I2C interface.
+        """
         return self._i2c
 
     @property
     def uart(self) -> UART._UART:
+        """This Konashi devices UART interface.
+        """
         return self._uart
 
     @property
     def spi(self) -> SPI._SPI:
+        """This Konashi devices SPI interface.
+        """
         return self._spi
 
     async def _on_connect(self):
