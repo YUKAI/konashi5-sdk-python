@@ -18,7 +18,7 @@ KONASHI_UUID_BUILTIN_RGB_SET = "064d0403-8251-49d9-b6f3-f7ba35e5d0a1"
 KONASHI_UUID_BUILTIN_RGB_GET = "064d0404-8251-49d9-b6f3-f7ba35e5d0a1"
 
 
-class RGBLed(KonashiElementBase._KonashiElementBase):
+class _RGBLed(KonashiElementBase._KonashiElementBase):
     def __init__(self, konashi) -> None:
         super().__init__(konashi)
         self._cb = None
@@ -42,14 +42,19 @@ class RGBLed(KonashiElementBase._KonashiElementBase):
             self._cb = None
 
 
-    async def set(self, r: int, g: int, b: int, a: int, duration: int, callback: Callable[[(int,int,int,int)], None] = None) -> None:
-        """
-        Set the RGB LED color.
-        r (int): Red (0~255)
-        g (int): Green (0~255)
-        b (int): Blue (0~255)
-        a (int): Alpha (0~255)
-        duration (int): duration to new color in milliseconds (0~65535)
+    async def set(self, r: int, g: int, b: int, a: int, duration: int, callback: Callable[[Tuple[int,int,int,int]], None] = None) -> None:
+        """Set the color of the LED, transitioning during the specified duration.
+        If a callback is provided, it will be called when the color transition has finished.
+
+        Args:
+            r (int): The Red color component (valid range is [0,255], the value is truncated if out of range).
+            g (int): The Green color component (valid range is [0,255], the value is truncated if out of range).
+            b (int): The Blue color component (valid range is [0,255], the value is truncated if out of range).
+            a (int): The Alpha component (valid range is [0,255], the value is truncated if out of range).
+            duration (int): The time to transition to the new color in milliseconds (valid range is [0,65535], the value is truncated if out of range).
+            callback (Callable[[Tuple[int,int,int,int]], None], optional): The callback. Defaults to None.
+                The function takes 1 parameter and returns nothing:
+                    Tuple[int,int,int,int]: The current LED color in the form (red,green,blue,alpha).
         """
         b = bytearray([r&0xFF, g&0xFF, b&0xFF, a&0xFF, (duration&0x00FF), ((duration&0xFF00)>>8)])
         await self._write(KONASHI_UUID_BUILTIN_RGB_SET, b)

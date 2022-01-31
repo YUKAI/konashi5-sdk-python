@@ -17,7 +17,7 @@ from ..Errors import *
 KONASHI_UUID_BUILTIN_PRESENCE = "00002ae2-0000-1000-8000-00805f9b34fb"
 
 
-class Presence(KonashiElementBase._KonashiElementBase):
+class _Presence(KonashiElementBase._KonashiElementBase):
     def __init__(self, konashi) -> None:
         super().__init__(konashi)
         self._cb = None
@@ -40,10 +40,13 @@ class Presence(KonashiElementBase._KonashiElementBase):
             self._cb(pres)
 
 
-    async def set_callback(self, notify_callback: Callable[[float], None]) -> None:
-        """
-        The callback is called with parameters:
-          presence (bool)
+    async def set_callback(self, notify_callback: Callable[[bool], None]) -> None:
+        """Set a callback for the presence sensor data.
+
+        Args:
+            notify_callback (Callable[[bool], None]): The callback.
+                The function takes 1 parameter and returns nothing:
+                    bool: True if presence is detected, False otherwise.
         """
         if notify_callback is not None:
             self._cb = notify_callback

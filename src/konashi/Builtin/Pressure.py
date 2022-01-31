@@ -17,7 +17,7 @@ from ..Errors import *
 KONASHI_UUID_BUILTIN_PRESSURE = "00002a6d-0000-1000-8000-00805f9b34fb"
 
 
-class Pressure(KonashiElementBase._KonashiElementBase):
+class _Pressure(KonashiElementBase._KonashiElementBase):
     def __init__(self, konashi) -> None:
         super().__init__(konashi)
         self._cb = None
@@ -42,9 +42,12 @@ class Pressure(KonashiElementBase._KonashiElementBase):
 
 
     async def set_callback(self, notify_callback: Callable[[float], None]) -> None:
-        """
-        The callback is called with parameters:
-          pressure in hectopascal (float)
+        """Set a callback for the pressure sensor data.
+
+        Args:
+            notify_callback (Callable[[float], None]): The callback.
+                The function takes 1 parameter and returns nothing:
+                    float: The pressure in hectopascal.
         """
         if notify_callback is not None:
             self._cb = notify_callback

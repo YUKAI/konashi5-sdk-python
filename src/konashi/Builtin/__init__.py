@@ -19,39 +19,51 @@ logger = logging.getLogger(__name__)
 KONASHI_UUID_BUILTIN_VERSION = "064d0401-8251-49d9-b6f3-f7ba35e5d0a1"
 
 
-class Builtin(KonashiElementBase._KonashiElementBase):
+class _Builtin(KonashiElementBase._KonashiElementBase):
     def __init__(self, konashi):
         super().__init__(konashi)
-        self._temperature = Temperature.Temperature(konashi)
-        self._humidity = Humidity.Humidity(konashi)
-        self._pressure = Pressure.Pressure(konashi)
-        self._presence = Presence.Presence(konashi)
-        self._accelgyro = AccelGyro.AccelGyro(konashi)
-        self._rgbled = RGBLed.RGBLed(konashi)
+        self._temperature = Temperature._Temperature(konashi)
+        self._humidity = Humidity._Humidity(konashi)
+        self._pressure = Pressure._Pressure(konashi)
+        self._presence = Presence._Presence(konashi)
+        self._accelgyro = AccelGyro._AccelGyro(konashi)
+        self._rgbled = RGBLed._RGBLed(konashi)
         self._version = -1
 
     @property
-    def temperature(self) -> Temperature.Temperature:
+    def temperature(self) -> Temperature._Temperature:
+        """This Konashi devices temperature sensor interface.
+        """
         return self._temperature
 
     @property
-    def humidity(self) -> Humidity.Humidity:
+    def humidity(self) -> Humidity._Humidity:
+        """This Konashi devices humidity sendor interface.
+        """
         return self._humidity
 
     @property
-    def pressure(self) -> Pressure.Pressure:
+    def pressure(self) -> Pressure._Pressure:
+        """This Konashi devices pressure sensor interface.
+        """
         return self._pressure
 
     @property
-    def presence(self) -> Presence.Presence:
+    def presence(self) -> Presence._Presence:
+        """This Konashi devices presence sensor interface.
+        """
         return self._presence
 
     @property
-    def accelgyro(self) -> AccelGyro.AccelGyro:
+    def accelgyro(self) -> AccelGyro._AccelGyro:
+        """This Konashi devices Accel and Gyro sensor interface.
+        """
         return self._accelgyro
 
     @property
-    def rgbled(self) -> RGBLed.RGBLed:
+    def rgbled(self) -> RGBLed._RGBLed:
+        """This Konashi devices RGB LED interface.
+        """
         return self._rgbled
 
     async def _on_connect(self):

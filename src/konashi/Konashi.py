@@ -13,7 +13,7 @@ from bleak import *
 
 from .Settings import _Settings
 from .Io import _Io
-from .Builtin import Builtin
+from .Builtin import _Builtin
 from .Errors import *
 
 
@@ -37,7 +37,7 @@ class Konashi:
         self._ble_client = None
         self._settings: _Settings = _Settings(self)
         self._io: _Io = _Io(self)
-        self._builtin: Builtin = Builtin(self)
+        self._builtin: _Builtin = _Builtin(self)
 
     def __str__(self):
         return f'Konashi {self._name} ({"Unknown" if self._ble_dev is None else self._ble_dev.address})'
@@ -209,11 +209,8 @@ class Konashi:
         return self._io
 
     @property
-    def builtin(self) -> Builtin:
+    def builtin(self) -> _Builtin:
         """This Konashi devices Built-in interface.
-
-        Returns:
-            Builtin: The Konashi device Built-in.
         """
         return self._builtin
 

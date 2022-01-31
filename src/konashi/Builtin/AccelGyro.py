@@ -17,7 +17,7 @@ from ..Errors import *
 KONASHI_UUID_BUILTIN_ACCELGYRO = "064d0402-8251-49d9-b6f3-f7ba35e5d0a1"
 
 
-class AccelGyro(KonashiElementBase._KonashiElementBase):
+class _AccelGyro(KonashiElementBase._KonashiElementBase):
     def __init__(self, konashi) -> None:
         super().__init__(konashi)
         self._cb = None
@@ -45,11 +45,19 @@ class AccelGyro(KonashiElementBase._KonashiElementBase):
             self._cb((accel_x,accel_y,accel_z),(gyro_x,gyro_y,gyro_z))
 
 
-    async def set_callback(self, notify_callback: Callable[[float], None]) -> None:
+    async def set_callback(self, notify_callback: Callable[[Tuple[float,float,float],Tuple[float,float,float]], None]) -> None:
         """
         The callback is called with parameters:
           accel in g (Tuple(float,float,float))
           gyro in degrees per second (Tuple(float,float,float))
+        """
+        """Set the callback for the accelerometer and gyroscope data.
+
+        Args:
+            notify_callback (Callable[[Tuple[float,float,float],Tuple[float,float,float]], None]): The callback.
+                The function take 2 parameters and returns nothing:
+                    Tuple[float,float,float]: The acceleration in g (9.8 m/s^2).
+                    Tuple[float,float,float]: The angular speed in degree/s.
         """
         if notify_callback is not None:
             self._cb = notify_callback
