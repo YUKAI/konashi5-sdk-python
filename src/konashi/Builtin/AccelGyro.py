@@ -46,11 +46,6 @@ class _AccelGyro(KonashiElementBase._KonashiElementBase):
 
 
     async def set_callback(self, notify_callback: Callable[[Tuple[float,float,float],Tuple[float,float,float]], None]) -> None:
-        """
-        The callback is called with parameters:
-          accel in g (Tuple(float,float,float))
-          gyro in degrees per second (Tuple(float,float,float))
-        """
         """Set the callback for the accelerometer and gyroscope data.
 
         Args:

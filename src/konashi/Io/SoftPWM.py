@@ -157,21 +157,6 @@ class _SoftPWM(KonashiElementBase._KonashiElementBase):
 
 
     async def config_pins(self, configs: Sequence(Tuple[int, SoftPWMPinConfig])) -> None:
-        """
-        Configure pins.
-
-        Parameters
-        ----------
-        configs : list of tuples of int, PinConfig
-            The list of configurations to set. For each tuple:
-            int: pin bitmask. A bitmask of the pins to apply this configuration to (range 0x00 to 0x0F).
-            PinConfig: config. The configuration for the pins specified in the bitmask.
-
-        Raises
-        ------
-        PinUnavailableError
-            If a pin is already configured with a function other than SoftPWM.
-        """
         """Configure the specified Software PWM pins.
 
         Args:
@@ -221,34 +206,6 @@ class _SoftPWM(KonashiElementBase._KonashiElementBase):
         self._trans_end_cb = notify_callback
 
     async def control_pins(self, controls: Sequence(Tuple[int, SoftPWMPinControl])) -> None:
-        """
-        Control pins.
-
-        Parameters
-        ----------
-        controls : list of tuples of int, PinControl
-            The list of controls to set. For each tuple:
-            int: pin bitmask. A bitmask of the pins to apply this control to (range 0x00 to 0x0F).
-            PinControl: control. The control for the pins specified in the bitmask.
-
-        Raises
-        ------
-        PinUnavailableError
-            If a pin is not configured with the SoftPWM function.
-        ValueError
-            If the control value in PinControl is out of range.
-        """
-        """Control Hardware PWM pins.
-
-        Args:
-            controls (Sequence[Tuple[int, HardPWMPinControl]]): A list of pin controls.
-                For each Tuple:
-                    int: A bitmask of the pins to apply the control to.
-                    HardPWMPinControl: The control for the specified pins.
-
-        Raises:
-            PinUnavailableError: At least one pin is not configured as a Hardware PWM pin.
-        """
         """Control Software PWM pins.
 
         Args:
