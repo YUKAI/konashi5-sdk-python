@@ -5,7 +5,7 @@ import asyncio
 from . import GPIO
 from . import SoftPWM
 from . import HardPWM
-from . import Analog
+from . import AIO
 from . import I2C
 from . import UART
 from . import SPI
@@ -16,7 +16,7 @@ class _Io:
         self._gpio = GPIO._GPIO(konashi)
         self._softpwm = SoftPWM._SoftPWM(konashi, self._gpio)
         self._hardpwm = HardPWM._HardPWM(konashi, self._gpio)
-        self._analog = Analog._Analog(konashi)
+        self._analog = AIO._AIO(konashi)
         self._i2c = I2C._I2C(konashi, self._gpio)
         self._uart = UART._UART(konashi)
         self._spi = SPI._SPI(konashi, self._gpio)
@@ -40,8 +40,8 @@ class _Io:
         return self._hardpwm
 
     @property
-    def analog(self) -> Analog._Analog:
-        """This Konashi devices Analog interface.
+    def analog(self) -> AIO._AIO:
+        """This Konashi devices AIO interface.
         """
         return self._analog
 

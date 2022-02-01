@@ -15,12 +15,12 @@ from .Settings.Bluetooth import BluetoothSettingsExAdvertiseContents
 from .Settings.Bluetooth import BluetoothSettingsExAdvertiseStatus
 
 
-from .Io.Analog import AdcRef
-from .Io.Analog import VdacRef
-from .Io.Analog import IdacRange
-from .Io.Analog import AnalogPinDirection
-from .Io.Analog import AnalogPinConfig
-from .Io.Analog import AnalogPinControl
+from .Io.AIO import ADCRef
+from .Io.AIO import VDACRef
+from .Io.AIO import IDACRange
+from .Io.AIO import AIOPinDirection
+from .Io.AIO import AIOPinConfig
+from .Io.AIO import AIOPinControl
 
 from .Io.GPIO import GPIOPinFunction
 from .Io.GPIO import GPIOPinDirection
