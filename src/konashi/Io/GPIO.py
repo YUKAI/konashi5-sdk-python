@@ -30,23 +30,23 @@ KONASHI_UUID_GPIO_INPUT = "064d0303-8251-49d9-b6f3-f7ba35e5d0a1"
 
 KONASHI_GPIO_COUNT = 8
 _KONASHI_GPIO_FUNCTION_STR = ["DISABLED", "GPIO", "PWM", "I2C", "SPI"]
-class GpioPinFunction(IntEnum):
+class GPIOPinFunction(IntEnum):
     DISABLED = 0
     GPIO = 1
     PWM = 2
     I2C = 3
     SPI = 4
-class GpioPinDirection(IntEnum):
+class GPIOPinDirection(IntEnum):
     DISABLED = 0
     INPUT = 1
     OUTPUT = 2
     OPEN_DRAIN = 3
     OPEN_SOURCE = 4
-class GpioPinPull(IntEnum):
+class GPIOPinPull(IntEnum):
     NONE = 0
     UP = 1
     DOWN = 2
-class GpioPinConfig(LittleEndianStructure):
+class GPIOPinConfig(LittleEndianStructure):
     _pack_ = 1
     _fields_ = [
         ('function', c_uint8, 4),
@@ -58,27 +58,27 @@ class GpioPinConfig(LittleEndianStructure):
         ('send_on_change', c_uint8, 1),
         ('', c_uint8, 2)
     ]
-    def __init__(self, direction: GpioPinDirection, pull: GpioPinPull=GpioPinPull.NONE, send_on_change: bool=True):
+    def __init__(self, direction: GPIOPinDirection, pull: GPIOPinPull=GPIOPinPull.NONE, send_on_change: bool=True):
         """GPIO pin configuration.
 
         Args:
-            direction (GpioPinDirection): The pin direction
-            pull (GpioPinPull, optional): The pin pull direction. Defaults to GpioPinPull.NONE.
+            direction (GPIOPinDirection): The pin direction
+            pull (GPIOPinPull, optional): The pin pull direction. Defaults to GPIOPinPull.NONE.
             send_on_change (bool, optional): If True, notify when the pin value changes. Defaults to True.
         """
-        if direction == GpioPinDirection.INPUT:
+        if direction == GPIOPinDirection.INPUT:
             self.function = 1
             self.direction = 0
             self.wired_fct = 0
-        elif direction == GpioPinDirection.OUTPUT:
+        elif direction == GPIOPinDirection.OUTPUT:
             self.function = 1
             self.direction = 1
             self.wired_fct = 0
-        elif direction == GpioPinDirection.OPEN_DRAIN:
+        elif direction == GPIOPinDirection.OPEN_DRAIN:
             self.function = 1
             self.direction = 0
             self.wired_fct = 1
-        elif direction == GpioPinDirection.OPEN_SOURCE:
+        elif direction == GPIOPinDirection.OPEN_SOURCE:
             self.function = 1
             self.direction = 0
             self.wired_fct = 2
@@ -86,10 +86,10 @@ class GpioPinConfig(LittleEndianStructure):
             self.function = 0
             self.direction = 0
             self.wired_fct = 0
-        if pull == GpioPinPull.UP:
+        if pull == GPIOPinPull.UP:
             self.pull_down = 0
             self.pull_up = 1
-        elif pull == GpioPinPull.DOWN:
+        elif pull == GPIOPinPull.DOWN:
             self.pull_down = 1
             self.pull_up = 0
         else:
@@ -97,10 +97,10 @@ class GpioPinConfig(LittleEndianStructure):
             self.pull_up = 0
         self.send_on_change = send_on_change
     def __str__(self):
-        s = "KonashiGpioPinConfig("
+        s = "KonashiGPIOPinConfig("
         try:
             s += _KONASHI_GPIO_FUNCTION_STR[self.function]
-            if self.function == GpioPinFunction.GPIO:
+            if self.function == GPIOPinFunction.GPIO:
                 s += ", "
                 s += "OD" if self.wired_fct==1 else "OS" if self.wired_fct==2 else "OUT" if 1 else "IN"
                 if self.pull_down:
@@ -113,13 +113,13 @@ class GpioPinConfig(LittleEndianStructure):
             s += ", Unknown"
         s += ")"
         return s
-_PinsConfig = GpioPinConfig*KONASHI_GPIO_COUNT
+_PinsConfig = GPIOPinConfig*KONASHI_GPIO_COUNT
 
-class GpioPinControl(IntEnum):
+class GPIOPinControl(IntEnum):
     LOW = 0
     HIGH = 1
     TOGGLE = 2
-class GpioPinLevel(IntEnum):
+class GPIOPinLevel(IntEnum):
     LOW = 0
     HIGH = 1
     INVALID = 2
@@ -134,7 +134,7 @@ class _PinIO(LittleEndianStructure):
 _PinsIO = _PinIO*KONASHI_GPIO_COUNT
 
 
-class _Gpio(KonashiElementBase._KonashiElementBase):
+class _GPIO(KonashiElementBase._KonashiElementBase):
     def __init__(self, konashi) -> None:
         super().__init__(konashi)
         self._config = _PinsConfig()
@@ -143,10 +143,10 @@ class _Gpio(KonashiElementBase._KonashiElementBase):
         self._input_cb = None
 
     def __str__(self):
-        return f'KonashiGpio'
+        return f'KonashiGPIO'
 
     def __repr__(self):
-        return f'KonashiGpio()'
+        return f'KonashiGPIO()'
 
 
     async def _on_connect(self) -> None:
@@ -177,14 +177,14 @@ class _Gpio(KonashiElementBase._KonashiElementBase):
         self._input = _PinsIO.from_buffer_copy(data)
 
 
-    async def config_pins(self, configs: Sequence(Tuple[int, GpioPinConfig])) -> None:
+    async def config_pins(self, configs: Sequence(Tuple[int, GPIOPinConfig])) -> None:
         """Configure GPIO pins.
 
         Args:
-            configs (Sequence[Tuple[int, GpioPinConfig]]): The list of pin configurations.
+            configs (Sequence[Tuple[int, GPIOPinConfig]]): The list of pin configurations.
                 For each Tuple:
                     int: A bitmask of the pins to apply the configuration to.
-                    GpioPinConfig: The configuration for the specified pins.
+                    GPIOPinConfig: The configuration for the specified pins.
 
         Raises:
             PinUnavailableError: At least one of the specified pins is confgured with a function other than GPIO.
@@ -193,19 +193,19 @@ class _Gpio(KonashiElementBase._KonashiElementBase):
         for config in configs:
             for i in range(KONASHI_GPIO_COUNT):
                 if (config[0]&(1<<i)) > 0:
-                    if GpioPinFunction(self._config[i].function) != GpioPinFunction.DISABLED and GpioPinFunction(self._config[i].function) != GpioPinFunction.GPIO:
+                    if GPIOPinFunction(self._config[i].function) != GPIOPinFunction.DISABLED and GPIOPinFunction(self._config[i].function) != GPIOPinFunction.GPIO:
                         raise PinUnavailableError(f'Pin {i} is already configured as {_KONASHI_GPIO_FUNCTION_STR[self._config[i].function]}')
                     b.extend(bytearray([(i<<4)|(bytes(config[1])[0]), bytes(config[1])[1]]))
         await self._write(KONASHI_UUID_CONFIG_CMD, b)
 
-    async def get_pins_config(self, pin_bitmask: int) -> List[GpioPinConfig]:
+    async def get_pins_config(self, pin_bitmask: int) -> List[GPIOPinConfig]:
         """Get the configuration of the specified pins.
 
         Args:
             pin_bitmask (int): A bitmask of the pins to get the configuration for.
 
         Returns:
-            List[GpioPinConfig]: The configurations of the specified pins.
+            List[GPIOPinConfig]: The configurations of the specified pins.
         """
         await self._read(KONASHI_UUID_GPIO_CONFIG_GET)
         l = []
@@ -226,14 +226,14 @@ class _Gpio(KonashiElementBase._KonashiElementBase):
         """
         self._input_cb = notify_callback
 
-    async def control_pins(self, controls: Sequence(Tuple[int, GpioPinControl])) -> None:
+    async def control_pins(self, controls: Sequence(Tuple[int, GPIOPinControl])) -> None:
         """Control GPIO pins.
 
         Args:
-            controls (Sequence[Tuple[int, GpioPinControl]]): A list of pin controls.
+            controls (Sequence[Tuple[int, GPIOPinControl]]): A list of pin controls.
                 For each Tuple:
                     int: A bitmask of the pins to apply the control to.
-                    GpioPinControl: The control for the specified pins.
+                    GPIOPinControl: The control for the specified pins.
 
         Raises:
             PinUnavailableError: At least one pin is not configured as GPIO.
@@ -242,45 +242,45 @@ class _Gpio(KonashiElementBase._KonashiElementBase):
         for control in controls:
             for i in range(KONASHI_GPIO_COUNT):
                 if (control[0]&(1<<i)) > 0:
-                    if GpioPinFunction(self._config[i].function) != GpioPinFunction.GPIO:
+                    if GPIOPinFunction(self._config[i].function) != GPIOPinFunction.GPIO:
                         raise PinUnavailableError(f'Pin {i} is not configured as GPIO (configured as {_KONASHI_GPIO_FUNCTION_STR[self._config[i].function]})')
                     b.extend(bytearray([(i<<4)|(control[1])]))
         await self._write(KONASHI_UUID_CONTROL_CMD, b)
 
-    async def get_pins_control(self, pin_bitmask: int) -> List[GpioPinLevel]:
+    async def get_pins_control(self, pin_bitmask: int) -> List[GPIOPinLevel]:
         """Get the output control of the specified pin.
 
         Args:
             pin_bitmask (int): A bitmask of the pins to get the output control for.
 
         Returns:
-            List[GpioPinLevel]: The output control of the specified pins.
+            List[GPIOPinLevel]: The output control of the specified pins.
         """
         await self._read(KONASHI_UUID_GPIO_OUTPUT_GET)
         l = []
         for i in range(KONASHI_GPIO_COUNT):
             if (pin_bitmask&(1<<i)) > 0:
                 if not self._output[i].valid:
-                    l.append(GpioPinLevel.INVALID)
+                    l.append(GPIOPinLevel.INVALID)
                 else:
-                    l.append(GpioPinLevel(self._output[i].level))
+                    l.append(GPIOPinLevel(self._output[i].level))
         return l
 
-    async def read_pins(self, pin_bitmask: int) -> List[GpioPinLevel]:
+    async def read_pins(self, pin_bitmask: int) -> List[GPIOPinLevel]:
         """Get the input value of the specified pins.
 
         Args:
             pin_bitmask (int): A bitmask of the pins to get the input value for.
 
         Returns:
-            List[GpioPinLevel]: The input value of the specified pins.
+            List[GPIOPinLevel]: The input value of the specified pins.
         """
         await self._read(KONASHI_UUID_GPIO_INPUT)
         l = []
         for i in range(KONASHI_GPIO_COUNT):
             if (pin_bitmask&(1<<i)) > 0:
                 if not self._input[i].valid:
-                    l.append(GpioPinLevel.INVALID)
+                    l.append(GPIOPinLevel.INVALID)
                 else:
-                    l.append(GpioPinLevel(self._input[i].level))
+                    l.append(GPIOPinLevel(self._input[i].level))
         return l

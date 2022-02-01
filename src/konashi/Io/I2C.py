@@ -13,7 +13,7 @@ from bleak import *
 
 from .. import KonashiElementBase
 from ..Errors import *
-from . import Gpio
+from . import GPIO
 
 
 logger = logging.getLogger(__name__)
@@ -119,10 +119,10 @@ class _I2C(KonashiElementBase._KonashiElementBase):
             PinUnavailableError: One of the I2C pins is set to another function.
         """
         if config.enabled:
-            if self._gpio._config[KONASHI_I2C_SDA_PINNB].function != int(Gpio.GpioPinFunction.DISABLED) and self._gpio._config[KONASHI_I2C_SDA_PINNB].function != int(Gpio.GpioPinFunction.I2C):
-                raise PinUnavailableError(f'Pin {KONASHI_I2C_SDA_PINNB} is already configured as {Gpio._KONASHI_GPIO_FUNCTION_STR[self._gpio._config[KONASHI_I2C_SDA_PINNB].function]}')
-            if self._gpio._config[KONASHI_I2C_SCL_PINNB].function != int(Gpio.GpioPinFunction.DISABLED) and self._gpio._config[KONASHI_I2C_SCL_PINNB].function != int(Gpio.GpioPinFunction.I2C):
-                raise PinUnavailableError(f'Pin {KONASHI_I2C_SCL_PINNB} is already configured as {Gpio._KONASHI_GPIO_FUNCTION_STR[self._gpio._config[KONASHI_I2C_SCL_PINNB].function]}')
+            if self._gpio._config[KONASHI_I2C_SDA_PINNB].function != int(GPIO.GPIOPinFunction.DISABLED) and self._gpio._config[KONASHI_I2C_SDA_PINNB].function != int(GPIO.GPIOPinFunction.I2C):
+                raise PinUnavailableError(f'Pin {KONASHI_I2C_SDA_PINNB} is already configured as {GPIO._KONASHI_GPIO_FUNCTION_STR[self._gpio._config[KONASHI_I2C_SDA_PINNB].function]}')
+            if self._gpio._config[KONASHI_I2C_SCL_PINNB].function != int(GPIO.GPIOPinFunction.DISABLED) and self._gpio._config[KONASHI_I2C_SCL_PINNB].function != int(GPIO.GPIOPinFunction.I2C):
+                raise PinUnavailableError(f'Pin {KONASHI_I2C_SCL_PINNB} is already configured as {GPIO._KONASHI_GPIO_FUNCTION_STR[self._gpio._config[KONASHI_I2C_SCL_PINNB].function]}')
         b = bytearray([KONASHI_CFG_CMD_I2C]) + bytearray(config)
         await self._write(KONASHI_UUID_CONFIG_CMD, b)
 

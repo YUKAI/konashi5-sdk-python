@@ -22,12 +22,12 @@ from .Io.Analog import AnalogPinDirection
 from .Io.Analog import AnalogPinConfig
 from .Io.Analog import AnalogPinControl
 
-from .Io.Gpio import GpioPinFunction
-from .Io.Gpio import GpioPinDirection
-from .Io.Gpio import GpioPinPull
-from .Io.Gpio import GpioPinConfig
-from .Io.Gpio import GpioPinControl
-from .Io.Gpio import GpioPinLevel
+from .Io.GPIO import GPIOPinFunction
+from .Io.GPIO import GPIOPinDirection
+from .Io.GPIO import GPIOPinPull
+from .Io.GPIO import GPIOPinConfig
+from .Io.GPIO import GPIOPinControl
+from .Io.GPIO import GPIOPinLevel
 
 from .Io.HardPWM import HardPWMClock
 from .Io.HardPWM import HardPWMPrescale

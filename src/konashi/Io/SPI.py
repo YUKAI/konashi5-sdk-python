@@ -13,7 +13,7 @@ from bleak import *
 
 from .. import KonashiElementBase
 from ..Errors import *
-from . import Gpio
+from . import GPIO
 
 
 logger = logging.getLogger(__name__)
@@ -128,14 +128,14 @@ class _SPI(KonashiElementBase._KonashiElementBase):
             PinUnavailableError: At least one of the pins is already configured with another function.
         """
         if config.enabled:
-            if self._gpio._config[KONASHI_SPI_CS_PINNB].function != int(Gpio.GpioPinFunction.DISABLED) and self._gpio._config[KONASHI_SPI_CS_PINNB].function != int(Gpio.GpioPinFunction.SPI):
-                raise PinUnavailableError(f'Pin {KONASHI_SPI_CS_PINNB} is already configured as {Gpio._KONASHI_GPIO_FUNCTION_STR[self._gpio._config[KONASHI_SPI_CS_PINNB].function]}')
-            if self._gpio._config[KONASHI_SPI_CLK_PINNB].function != int(Gpio.GpioPinFunction.DISABLED) and self._gpio._config[KONASHI_SPI_CLK_PINNB].function != int(Gpio.GpioPinFunction.SPI):
-                raise PinUnavailableError(f'Pin {KONASHI_SPI_CLK_PINNB} is already configured as {Gpio._KONASHI_GPIO_FUNCTION_STR[self._gpio._config[KONASHI_SPI_CLK_PINNB].function]}')
-            if self._gpio._config[KONASHI_SPI_MISO_PINNB].function != int(Gpio.GpioPinFunction.DISABLED) and self._gpio._config[KONASHI_SPI_MISO_PINNB].function != int(Gpio.GpioPinFunction.SPI):
-                raise PinUnavailableError(f'Pin {KONASHI_SPI_MISO_PINNB} is already configured as {Gpio._KONASHI_GPIO_FUNCTION_STR[self._gpio._config[KONASHI_SPI_MISO_PINNB].function]}')
-            if self._gpio._config[KONASHI_SPI_MOSI_PINNB].function != int(Gpio.GpioPinFunction.DISABLED) and self._gpio._config[KONASHI_SPI_MOSI_PINNB].function != int(Gpio.GpioPinFunction.SPI):
-                raise PinUnavailableError(f'Pin {KONASHI_SPI_MOSI_PINNB} is already configured as {Gpio._KONASHI_GPIO_FUNCTION_STR[self._gpio._config[KONASHI_SPI_MOSI_PINNB].function]}')
+            if self._gpio._config[KONASHI_SPI_CS_PINNB].function != int(GPIO.GPIOPinFunction.DISABLED) and self._gpio._config[KONASHI_SPI_CS_PINNB].function != int(GPIO.GPIOPinFunction.SPI):
+                raise PinUnavailableError(f'Pin {KONASHI_SPI_CS_PINNB} is already configured as {GPIO._KONASHI_GPIO_FUNCTION_STR[self._gpio._config[KONASHI_SPI_CS_PINNB].function]}')
+            if self._gpio._config[KONASHI_SPI_CLK_PINNB].function != int(GPIO.GPIOPinFunction.DISABLED) and self._gpio._config[KONASHI_SPI_CLK_PINNB].function != int(GPIO.GPIOPinFunction.SPI):
+                raise PinUnavailableError(f'Pin {KONASHI_SPI_CLK_PINNB} is already configured as {GPIO._KONASHI_GPIO_FUNCTION_STR[self._gpio._config[KONASHI_SPI_CLK_PINNB].function]}')
+            if self._gpio._config[KONASHI_SPI_MISO_PINNB].function != int(GPIO.GPIOPinFunction.DISABLED) and self._gpio._config[KONASHI_SPI_MISO_PINNB].function != int(GPIO.GPIOPinFunction.SPI):
+                raise PinUnavailableError(f'Pin {KONASHI_SPI_MISO_PINNB} is already configured as {GPIO._KONASHI_GPIO_FUNCTION_STR[self._gpio._config[KONASHI_SPI_MISO_PINNB].function]}')
+            if self._gpio._config[KONASHI_SPI_MOSI_PINNB].function != int(GPIO.GPIOPinFunction.DISABLED) and self._gpio._config[KONASHI_SPI_MOSI_PINNB].function != int(GPIO.GPIOPinFunction.SPI):
+                raise PinUnavailableError(f'Pin {KONASHI_SPI_MOSI_PINNB} is already configured as {GPIO._KONASHI_GPIO_FUNCTION_STR[self._gpio._config[KONASHI_SPI_MOSI_PINNB].function]}')
         b = bytearray([KONASHI_CFG_CMD_SPI]) + bytearray(config)
         await self._write(KONASHI_UUID_CONFIG_CMD, b)
 
