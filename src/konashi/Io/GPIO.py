@@ -29,13 +29,14 @@ KONASHI_UUID_GPIO_INPUT = "064d0303-8251-49d9-b6f3-f7ba35e5d0a1"
 
 
 KONASHI_GPIO_COUNT = 8
-_KONASHI_GPIO_FUNCTION_STR = ["DISABLED", "GPIO", "PWM", "I2C", "SPI"]
+_KONASHI_GPIO_FUNCTION_STR = ["DISABLED", "GPIO", "PWM", "I2C", "SPI", "NEOPIXEL"]
 class GPIOPinFunction(IntEnum):
     DISABLED = 0
     GPIO = 1
     PWM = 2
     I2C = 3
     SPI = 4
+    NEOPIXEL = 5
 class GPIOPinDirection(IntEnum):
     DISABLED = 0
     INPUT = 1

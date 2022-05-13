@@ -9,6 +9,7 @@ from . import AIO
 from . import I2C
 from . import UART
 from . import SPI
+from . import NeoPixel
 
 
 class _Io:
@@ -20,6 +21,7 @@ class _Io:
         self._i2c = I2C._I2C(konashi, self._gpio)
         self._uart = UART._UART(konashi)
         self._spi = SPI._SPI(konashi, self._gpio)
+        self._neopixel = NeoPixel._NeoPixel(konashi, self._gpio)
 
     @property
     def gpio(self) -> GPIO._GPIO:
@@ -63,6 +65,12 @@ class _Io:
         """
         return self._spi
 
+    @property
+    def neopixel(self) -> NeoPixel._NeoPixel:
+        """This Konashi devices NeoPixel interface.
+        """
+        return self._neopixel
+
     async def _on_connect(self):
         await self._gpio._on_connect()
         await self._softpwm._on_connect()
@@ -71,3 +79,4 @@ class _Io:
         await self._i2c._on_connect()
         await self._uart._on_connect()
         await self._spi._on_connect()
+        await self._neopixel._on_connect()
