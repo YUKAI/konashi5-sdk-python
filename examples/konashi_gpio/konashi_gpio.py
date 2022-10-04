@@ -13,7 +13,7 @@ async def main(device):
     try:
         if device is None:
             logging.info("Scan for konashi devices for 5 seconds")
-            ks = await Konashi.search(5)
+            ks = await KonashiScanner.search(5)
             if len(ks) > 0:
                 device = ks[0]
                 logging.info("Use konashi device: {}".format(device.name))

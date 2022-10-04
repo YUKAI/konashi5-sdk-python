@@ -8,7 +8,7 @@ import argparse
 
 async def main(duration):
     logging.info("Scan for Koshian for {} seconds".format(duration))
-    ks = await Konashi.search(duration)
+    ks = await KonashiScanner.search(duration)
     logging.info("Number of Koshian devices discovered: {}".format(len(ks)))
     for k in ks:
         logging.info("  {}".format(k.name))
