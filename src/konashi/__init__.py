@@ -2,6 +2,7 @@
 
 
 from .Konashi import Konashi
+from .Konashi import KonashiScanner
 
 
 from .Settings.System import SystemSettingsNvmUse

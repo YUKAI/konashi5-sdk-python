@@ -52,7 +52,90 @@ class Konashi:
 
     def __ne__(self, other):
         return not self.__eq__(other)
-        
+
+
+    async def connect(self, timeout: float=0.0) -> None:
+        """Connect to this Konashi device.
+
+        If the Konashi class instance was created directly by the user and not returned
+        from ``find`` or ``search``, ``find`` will be called internally before the connection
+        takes place. In this case, the passed timeout value is also used for ``find``.
+        If the Konashi class instance was returned from ``find`` or ``search``, then ``find`` will
+        not be called again.
+
+        Args:
+            timeout (float, optional): The connection timeout in seconds. Defaults to 0.0.
+
+        Raises:
+            KonashiConnectionError: The Konashi device was found but the connection failed.
+            NotFoundError: The Konashi device was not found within the timeout time.
+            InvalidDeviceError: The specified device name was found but it does not appear to be a valid Konashi device.
+        """
+        if self._ble_dev is None:
+            try:
+                k = await self.find(self._name, timeout)
+                self._ble_dev = k._ble_dev
+            except NotFoundError:
+                raise
+            except InvalidDeviceError:
+                raise
+        if self._ble_client is None:
+            self._ble_client = BleakClient(self._ble_dev.address)
+        try:
+            logger.debug("Connect to device {}".format(self._name))
+            if not timeout > 0.0:
+                timeout = None
+            _con = await self._ble_client.connect(timeout=timeout)
+        except BleakError as e:
+            self._ble_client = None
+            raise KonashiConnectionError(f'Error occured during BLE connect: "{str(e)}"')
+        if _con:
+            await self._settings._on_connect()
+            await self._io._on_connect()
+            await self._builtin._on_connect()
+
+    async def disconnect(self) -> None:
+        """Disconnect from this Konashi device.
+        """
+        if self._ble_client is not None:
+            await self._ble_client.disconnect()
+            self._ble_client = None
+
+    @property
+    def settings(self) -> _Settings:
+        """This Konashi devices Settings interface.
+        """
+        return self._settings
+
+    @property
+    def io(self) -> _Io:
+        """This Konashi devices I/O interface.
+        """
+        return self._io
+
+    @property
+    def builtin(self) -> _Builtin:
+        """This Konashi devices Built-in interface.
+        """
+        return self._builtin
+
+    @property
+    def name(self) -> str:
+        """The name (Bluetooth advertising name) of this Konashi device.
+
+        Returns:
+            str: The Konashi device name.
+        """
+        return self._name
+
+
+class KonashiScanner:
+    """This class represents a Konashi scanner.
+    """
+    def __init__(self) -> None:
+        """Constructor.
+        """
+        self._scanner = None
 
     @staticmethod
     async def find(name: str, timeout: float=0.0) -> Konashi:
@@ -141,84 +224,49 @@ class Konashi:
                     _konashi.append(k)
         _scanner = BleakScanner()
         _scanner.register_detection_callback(_scan_cb)
-        logger.debug("Start scanning for konashi")
+        logger.debug("Start searching for konashi")
         await _scanner.start()
         await asyncio.sleep(timeout)
         _scanner.register_detection_callback(None)
         await _scanner.stop()
-        logger.debug("Finished scanning for konashi")
+        logger.debug("Finished searching for konashi")
         return _konashi
 
-    async def connect(self, timeout: float=0.0) -> None:
-        """Connect to this Konashi device.
-
-        If the Konashi class instance was created directly by the user and not returned
-        from ``find`` or ``search``, ``find`` will be called internally before the connection
-        takes place. In this case, the passed timeout value is also used for ``find``.
-        If the Konashi class instance was returned from ``find`` or ``search``, then ``find`` will
-        not be called again.
+    async def scan_start(self, cb: Callable[[Konashi], None]) -> None:
+        """Start scanning for Konashi devices.
+        The search continues until cancelled and the callback is called when a device is discovered.
 
         Args:
-            timeout (float, optional): The connection timeout in seconds. Defaults to 0.0.
-
-        Raises:
-            KonashiConnectionError: The Konashi device was found but the connection failed.
-            NotFoundError: The Konashi device was not found within the timeout time.
-            InvalidDeviceError: The specified device name was found but it does not appear to be a valid Konashi device.
-        """
-        if self._ble_dev is None:
-            try:
-                k = await self.find(self._name, timeout)
-                self._ble_dev = k._ble_dev
-            except NotFoundError:
-                raise
-            except InvalidDeviceError:
-                raise
-        if self._ble_client is None:
-            self._ble_client = BleakClient(self._ble_dev.address)
-        try:
-            logger.debug("Connect to device {}".format(self._name))
-            if not timeout > 0.0:
-                timeout = None
-            _con = await self._ble_client.connect(timeout=timeout)
-        except BleakError as e:
-            self._ble_client = None
-            raise KonashiConnectionError(f'Error occured during BLE connect: "{str(e)}"')
-        if _con:
-            await self._settings._on_connect()
-            await self._io._on_connect()
-            await self._builtin._on_connect()
-
-    async def disconnect(self) -> None:
-        """Disconnect from this Konashi device.
-        """
-        if self._ble_client is not None:
-            await self._ble_client.disconnect()
-            self._ble_client = None
-
-    @property
-    def settings(self) -> _Settings:
-        """This Konashi devices Settings interface.
-        """
-        return self._settings
-
-    @property
-    def io(self) -> _Io:
-        """This Konashi devices I/O interface.
-        """
-        return self._io
-
-    @property
-    def builtin(self) -> _Builtin:
-        """This Konashi devices Built-in interface.
-        """
-        return self._builtin
-
-    @property
-    def name(self) -> str:
-        """The name (Bluetooth advertising name) of this Konashi device.
+            cb (Callable[[Konashi], None]): The callback for discovered devices.
 
         Returns:
-            str: The Konashi device name.
+            List[Konashi]: A list of discovered Konashi devices.
         """
-        return self._name
+        if self._scanner is not None:
+            return
+        def _scan_cb(dev, adv):
+            if KONASHI_ADV_SERVICE_UUID in adv.service_uuids:
+                k = Konashi(dev.name)
+                k._ble_dev = dev
+                cb(k)
+        self._scanner = BleakScanner()
+        self._scanner.register_detection_callback(_scan_cb)
+        await self._scanner.start()
+        logger.debug("Started scanning for konashi")
+
+    async def scan_stop(self) -> None:
+        if self._scanner is None:
+            return
+        self._scanner.register_detection_callback(None)
+        await self._scanner.stop()
+        self._scanner = None
+        logger.debug("Finished scanning for konashi")
+
+    @property
+    def is_scanning(self) -> bool:
+        """Indicates if this scanner instance is currently scanning.
+
+        Returns:
+            bool: True is the scanner is scanning, otherwise False.
+        """
+        return self._scanner is not None
