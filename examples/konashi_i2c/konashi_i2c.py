@@ -3,7 +3,6 @@
 from asyncio.exceptions import CancelledError
 from konashi import *
 import konashi
-from konashi.Io import I2C as KonashiI2C
 import logging
 import asyncio
 import argparse
@@ -29,63 +28,18 @@ async def main(device):
 
 
         # enable I2C in standard mode
-        await device.io.i2c.config(KonashiI2C.Config(True, KonashiI2C.Mode.STANDARD))
+        await device.io.i2c.config(konashi.I2CConfig(True, konashi.I2CMode.STANDARD))
 
-        # using VL6180X sensor (https://www.pololu.com/product/2489/resources)
-        sens_addr = 0x29
-
-        # IDENTIFICATION__MODEL_ID (0x000) read
-        res, addr, data = await device.io.i2c.transaction(KonashiI2C.Operation.WRITE_READ, sens_addr, 1, [0x00, 0x00])
-        if res == KonashiI2C.Result.DONE:
-            logging.info("IDENTIFICATION__MODEL_ID: {}".format("".join("{:02x}".format(x) for x in data)))
-        else:
-            logging.error("Error reading IDENTIFICATION__MODEL_ID: {}".format(res))
-            return
-
-        # RESULT__ALS_STATUS (0x04E) read
-        res, addr, data = await device.io.i2c.transaction(KonashiI2C.Operation.WRITE_READ, sens_addr, 1, [0x00, 0x4E])
-        if res == KonashiI2C.Result.DONE:
-            logging.info("RESULT__ALS_STATUS: {}".format("".join("{:02x}".format(x) for x in data)))
-        else:
-            logging.error("Error reading RESULT__ALS_STATUS: {}".format(res))
-            return
-        if (data[0]&0x01) == 0x01:
-            # set ASL intermeasurement period an integration period
-            res, addr, data = await device.io.i2c.transaction(KonashiI2C.Operation.WRITE, sens_addr, 0, [0x00, 0x3E, 0x31])
-            if res != KonashiI2C.Result.DONE:
-                logging.error("Error writing SYSALS__INTERMEASUREMENT_PERIOD: {}".format(res))
-                return
-            res, addr, data = await device.io.i2c.transaction(KonashiI2C.Operation.WRITE, sens_addr, 0, [0x00, 0x17, 0x01])
-            if res != KonashiI2C.Result.DONE:
-                logging.error("Error writing SYSTEM__GROUPED_PARAMETER_HOLD: {}".format(res))
-                return
-            res, addr, data = await device.io.i2c.transaction(KonashiI2C.Operation.WRITE, sens_addr, 0, [0x00, 0x40, 0x63])
-            if res != KonashiI2C.Result.DONE:
-                logging.error("Error writing SYSALS__INTERMEASUREMENT_PERIOD: {}".format(res))
-                return
-            res, addr, data = await device.io.i2c.transaction(KonashiI2C.Operation.WRITE, sens_addr, 0, [0x00, 0x17, 0x00])
-            if res != KonashiI2C.Result.DONE:
-                logging.error("Error writing SYSTEM__GROUPED_PARAMETER_HOLD: {}".format(res))
-                return
-            # SYSALS__START (0x038) write: ALS Mode continuous, start
-            res, addr, data = await device.io.i2c.transaction(KonashiI2C.Operation.WRITE, sens_addr, 0, [0x00, 0x38, 0x03])
-            if res == KonashiI2C.Result.DONE:
-                logging.info("SYSALS__START write done")
-            else:
-                logging.error("Error writing SYSALS__START: {}".format(res))
-                return
-        
-        # read RESULT__ALS_VAL (0x050) continuously every second
+        sens_addr = 0x11
+        cnt = 0
         while True:
-            res, addr, data = await device.io.i2c.transaction(KonashiI2C.Operation.WRITE_READ, sens_addr, 2, [0x00, 0x50])
-            if res == KonashiI2C.Result.DONE:
-                logging.debug("RESULT__ALS_VAL: {}".format("".join("{:02x}".format(x) for x in data)))
-                lux = ((data[0]<<8)+data[1]) * 0.32 * 100/ (1.0 * 100)
-                logging.info("ALS: {}lux".format(lux))
-            else:
-                logging.error("Error reading RESULT__ALS_VAL: {}".format(res))
-                return
-            await asyncio.sleep(1)
+            res, addr, data = await device.io.i2c.transaction(konashi.I2COperation.WRITE, sens_addr, 0, [cnt, 0x10, 0x50])
+            print("Result:", res, "Address:", addr, "Data:", data)
+            res, addr, data = await device.io.i2c.transaction(konashi.I2COperation.READ, sens_addr, 5, [])
+            print("Result:", res, "Address:", addr, "Data:", data)
+            await asyncio.sleep(5)
+            cnt += 1
+            cnt %= 0xFF
 
 
     except (asyncio.CancelledError, KeyboardInterrupt):

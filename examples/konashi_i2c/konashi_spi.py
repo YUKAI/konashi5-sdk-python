@@ -3,7 +3,6 @@
 from asyncio.exceptions import CancelledError
 from konashi import *
 import konashi
-from konashi.Io import GPIO as KonashiGpio
 import logging
 import asyncio
 import argparse
@@ -26,28 +25,18 @@ async def main(device):
             logging.error("Could not connect to konashi device '{}': {}".format(device.name, e))
             return
         logging.info("Connected to device")
-        def input_cb(pin, level):
-            logging.info("Pin {}: {}".format(pin, level))
-        # Input callback function set
-        device.io.gpio.set_input_cb(input_cb)
-        # GPIO0: enable, input, notify on change, pull-down off, pull-up off, wired function off
-        # GPIO1~4: enable, output, pull-down off, pull-up off, wired function off
-        await device.io.gpio.config_pins([
-            (0x01, KonashiGpio.GPIOPinConfig(KonashiGpio.GPIOPinDirection.INPUT, KonashiGpio.GPIOPinPull.NONE, True)),
-            (0x1e, KonashiGpio.GPIOPinConfig(KonashiGpio.GPIOPinDirection.OUTPUT, KonashiGpio.GPIOPinPull.NONE, False))
-        ])
+
+
+        await device.io.spi.config(konashi.SPIConfig(True, konashi.SPIMode.MODE0, konashi.SPIEndian.LSB_FIRST, 1000000))
 
         cnt = 0
         while True:
-            on_pin_mask = cnt<<1
-            off_pin_mask = ((~cnt)&0xF)<<1
-            await device.io.gpio.control_pins([
-                (on_pin_mask, KonashiGpio.GPIOPinControl.HIGH),
-                (off_pin_mask, KonashiGpio.GPIOPinControl.LOW)
-            ])
+            res = await device.io.spi.transaction(b"heLLo worLd"+bytes(str(cnt), 'utf8'))
+            print("Transaction data:", res)
+            await asyncio.sleep(5)
             cnt += 1
-            cnt %= 16
-            await asyncio.sleep(0.5)
+
+
     except (asyncio.CancelledError, KeyboardInterrupt):
         logging.info("Stop loop")
     except Exception as e:
@@ -63,7 +52,7 @@ async def main(device):
     logging.info("Exit")
 
 
-parser = argparse.ArgumentParser(description="Connect to a konashi device, setup the GPIOs, control them and read input.")
+parser = argparse.ArgumentParser(description="Connect to a konashi device, setup SPI and run.")
 parser.add_argument("--device", "-d", type=Konashi, help="The konashi device name to use. Ommit to scan and use first discovered device.")
 args = parser.parse_args()
 
