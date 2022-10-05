@@ -1,6 +1,28 @@
-[build-system]
-requires = [
-    "setuptools",
-    "wheel"
+[project]
+name = "konashi"
+version = "0.3.0"
+description = "Konashi SDK for Python3"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text="MIT License" }
+authors = [
+    { name="Sebastian MILLER", email="sebastian@ux-xu.com" },
 ]
-build-backend = "setuptools.build_meta"
+keywords = [
+    "konashi",
+    "Koshian",
+    "BLE",
+    "Bluetooth",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    'bleak >= 0.10.0',
+]
+
+[project.urls]
+repository = "https://github.com/YUKAI/konashi5-sdk-python"
+bug-tracker = "https://github.com/YUKAI/konashi5-sdk-python/issues"
