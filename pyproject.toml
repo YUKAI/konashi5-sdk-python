@@ -1,6 +1,6 @@
 [project]
 name = "konashi"
-version = "0.3.0"
+version = "0.4.0"
 description = "Konashi SDK for Python3"
 readme = "README.md"
 requires-python = ">=3.8"

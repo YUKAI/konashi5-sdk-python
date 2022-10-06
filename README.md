@@ -1,15 +1,8 @@
 Repository for Konashi Python SDK.
 
 
-## Install
+## Installation
 
-To install to user local lib:
 ```
-python3 setup.py install --user
+pip install konashi
 ```
-
-To install to root lib:
-```
-sudo python3 setup.py install
-```
-
