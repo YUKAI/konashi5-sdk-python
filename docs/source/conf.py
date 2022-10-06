@@ -3,11 +3,16 @@
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
+import pathlib
+import sys
+import tomli
+
+
 # -- Path setup --------------------------------------------------------------
 
-import os
-import sys
-sys.path.insert(0, os.path.abspath('../../src'))
+PROJECT_ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
+
+sys.path.insert(0, PROJECT_ROOT/"src")
 
 
 # -- Project information -----------------------------------------------------
@@ -16,6 +21,9 @@ sys.path.insert(0, os.path.abspath('../../src'))
 project = 'Konashi5 SDK (Python)'
 copyright = '2022, Yukai Engineering Inc.'
 author = 'Yukai Engineering Inc.'
+
+with open(PROJECT_ROOT/"pyproject.toml", "rb") as f:
+    version = release = tomli.load(f)["project"]["version"]
 
 
 # -- General configuration ---------------------------------------------------
