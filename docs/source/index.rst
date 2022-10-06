@@ -10,6 +10,7 @@ Welcome to Konashi5 SDK (Python)'s documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   konashi
 
 
 Indices and tables
