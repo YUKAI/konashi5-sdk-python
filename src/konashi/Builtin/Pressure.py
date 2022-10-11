@@ -47,7 +47,7 @@ class _Pressure(KonashiElementBase._KonashiElementBase):
         Args:
             notify_callback (Callable[[float], None]): The callback.
                 The function takes 1 parameter and returns nothing:
-                    float: The pressure in hectopascal.
+                float: The pressure in hectopascal.
         """
         if notify_callback is not None:
             self._cb = notify_callback

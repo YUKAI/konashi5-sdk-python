@@ -11,6 +11,7 @@ konashi.Io.AIO module
    :members:
    :undoc-members:
    :show-inheritance:
+   :private-members:
 
 konashi.Io.GPIO module
 ----------------------
@@ -19,6 +20,7 @@ konashi.Io.GPIO module
    :members:
    :undoc-members:
    :show-inheritance:
+   :private-members:
 
 konashi.Io.HardPWM module
 -------------------------
@@ -27,6 +29,7 @@ konashi.Io.HardPWM module
    :members:
    :undoc-members:
    :show-inheritance:
+   :private-members:
 
 konashi.Io.I2C module
 ---------------------
@@ -35,6 +38,7 @@ konashi.Io.I2C module
    :members:
    :undoc-members:
    :show-inheritance:
+   :private-members:
 
 konashi.Io.SPI module
 ---------------------
@@ -43,6 +47,7 @@ konashi.Io.SPI module
    :members:
    :undoc-members:
    :show-inheritance:
+   :private-members:
 
 konashi.Io.SoftPWM module
 -------------------------
@@ -51,6 +56,7 @@ konashi.Io.SoftPWM module
    :members:
    :undoc-members:
    :show-inheritance:
+   :private-members:
 
 konashi.Io.UART module
 ----------------------
@@ -59,6 +65,7 @@ konashi.Io.UART module
    :members:
    :undoc-members:
    :show-inheritance:
+   :private-members:
 
 Module contents
 ---------------
@@ -67,3 +74,4 @@ Module contents
    :members:
    :undoc-members:
    :show-inheritance:
+   :private-members:

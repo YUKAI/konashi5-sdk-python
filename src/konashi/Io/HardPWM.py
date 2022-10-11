@@ -221,8 +221,8 @@ class _HardPWM(KonashiElementBase._KonashiElementBase):
         Args:
             configs (Sequence[Tuple[int, bool]]): The list of pin configurations.
                 For each Tuple:
-                    int: A bitmask of the pins to apply the configuration to.
-                    bool: True to enable, False to disable the specified pins.
+                int: A bitmask of the pins to apply the configuration to.
+                bool: True to enable, False to disable the specified pins.
 
         Raises:
             PinUnavailableError: At least one of the specified pins is already configured with another function.
@@ -245,7 +245,7 @@ class _HardPWM(KonashiElementBase._KonashiElementBase):
         Returns:
             List[HardPWMPinConfig]: The configurations of the specified pins.
                 Each class in the list has the following member:
-                    enabled: True if the pin is enabled, otherwise False
+                enabled: True if the pin is enabled, otherwise False
 
         """
         await self._read(KONASHI_UUID_HARDPWM_CONFIG_GET)
@@ -261,8 +261,8 @@ class _HardPWM(KonashiElementBase._KonashiElementBase):
         Args:
             notify_callback (Callable[[int, float], None]): The callback function.
                 The function takes 2 parameters and returns nothing:
-                    int: The pin number.
-                    float: The current duty in %.
+                int: The pin number.
+                float: The current duty in %.
         """
         self._trans_end_cb = notify_callback
 
@@ -272,8 +272,8 @@ class _HardPWM(KonashiElementBase._KonashiElementBase):
         Args:
             controls (Sequence[Tuple[int, HardPWMPinControl]]): A list of pin controls.
                 For each Tuple:
-                    int: A bitmask of the pins to apply the control to.
-                    HardPWMPinControl: The control for the specified pins.
+                int: A bitmask of the pins to apply the control to.
+                HardPWMPinControl: The control for the specified pins.
 
         Raises:
             PinUnavailableError: At least one pin is not configured as a Hardware PWM pin.

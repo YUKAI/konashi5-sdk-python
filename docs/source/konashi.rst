@@ -21,6 +21,7 @@ konashi.Errors module
    :members:
    :undoc-members:
    :show-inheritance:
+   :private-members:
 
 konashi.Konashi module
 ----------------------
@@ -29,6 +30,7 @@ konashi.Konashi module
    :members:
    :undoc-members:
    :show-inheritance:
+   :private-members:
 
 konashi.KonashiElementBase module
 ---------------------------------
@@ -37,6 +39,7 @@ konashi.KonashiElementBase module
    :members:
    :undoc-members:
    :show-inheritance:
+   :private-members:
 
 Module contents
 ---------------
@@ -45,3 +48,4 @@ Module contents
    :members:
    :undoc-members:
    :show-inheritance:
+   :private-members:

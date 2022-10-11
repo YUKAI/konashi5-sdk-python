@@ -11,6 +11,7 @@ konashi.Settings.Bluetooth module
    :members:
    :undoc-members:
    :show-inheritance:
+   :private-members:
 
 konashi.Settings.System module
 ------------------------------
@@ -19,6 +20,7 @@ konashi.Settings.System module
    :members:
    :undoc-members:
    :show-inheritance:
+   :private-members:
 
 Module contents
 ---------------
@@ -27,3 +29,4 @@ Module contents
    :members:
    :undoc-members:
    :show-inheritance:
+   :private-members:

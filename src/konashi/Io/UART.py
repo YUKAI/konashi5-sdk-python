@@ -146,7 +146,7 @@ class _UART(KonashiElementBase._KonashiElementBase):
         Args:
             callback (Callable[[bytes], None]): The callback.
                 The function takes 1 parameter and return nothing:
-                    bytes: The received data. 
+                bytes: The received data.
         """
         self._data_in_cb = callback
 

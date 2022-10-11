@@ -162,8 +162,8 @@ class _SoftPWM(KonashiElementBase._KonashiElementBase):
         Args:
             configs (Sequence[Tuple[int, SoftPWMPinConfig]]): The list of pin configurations.
                 For each Tuple:
-                    int: A bitmask of the pins to apply the configuration to.
-                    SoftPWMPinConfig: The configuration for the specified pins.
+                int: A bitmask of the pins to apply the configuration to.
+                SoftPWMPinConfig: The configuration for the specified pins.
 
         Raises:
             PinUnavailableError: At least one of the specified is already configured with another function.
@@ -199,9 +199,9 @@ class _SoftPWM(KonashiElementBase._KonashiElementBase):
         Args:
             notify_callback (Callable[[int, SoftPWMControlType, int], None]): The callback function.
                 The function takes 3 parameters and returns nothing:
-                    int: The pin number.
-                    SoftPWMControlType: The pins control type.
-                    int: The current control value.
+                int: The pin number.
+                SoftPWMControlType: The pins control type.
+                int: The current control value.
         """
         self._trans_end_cb = notify_callback
 
@@ -211,8 +211,8 @@ class _SoftPWM(KonashiElementBase._KonashiElementBase):
         Args:
             controls (Sequence[Tuple[int, SoftPWMPinControl]]): A list of pin controls.
                 For each Tuple:
-                    int: A bitmask of the pins to apply the control to.
-                    SoftPWMPinControl: The control for the specified pins.
+                int: A bitmask of the pins to apply the control to.
+                SoftPWMPinControl: The control for the specified pins.
 
         Raises:
             PinUnavailableError: At least one pin is not configured as a Software PWM pin.

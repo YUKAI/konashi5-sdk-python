@@ -46,7 +46,7 @@ class _Presence(KonashiElementBase._KonashiElementBase):
         Args:
             notify_callback (Callable[[bool], None]): The callback.
                 The function takes 1 parameter and returns nothing:
-                    bool: True if presence is detected, False otherwise.
+                bool: True if presence is detected, False otherwise.
         """
         if notify_callback is not None:
             self._cb = notify_callback
