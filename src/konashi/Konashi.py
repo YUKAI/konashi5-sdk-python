@@ -58,10 +58,8 @@ class Konashi:
         """Connect to this Konashi device.
 
         If the Konashi class instance was created directly by the user and not returned
-        from ``find`` or ``search``, ``find`` will be called internally before the connection
-        takes place. In this case, the passed timeout value is also used for ``find``.
-        If the Konashi class instance was returned from ``find`` or ``search``, then ``find`` will
-        not be called again.
+        from a KonashiScanner, ``KonashiScanner.find()`` will be called internally before the connection
+        takes place. In this case, the passed timeout value is also used for ``KonashiScanner.find()``.
 
         Args:
             timeout (float, optional): The connection timeout in seconds. Defaults to 0.0.
@@ -73,7 +71,7 @@ class Konashi:
         """
         if self._ble_dev is None:
             try:
-                k = await self.find(self._name, timeout)
+                k = await KonashiScanner.find(self._name, timeout)
                 self._ble_dev = k._ble_dev
             except NotFoundError:
                 raise
