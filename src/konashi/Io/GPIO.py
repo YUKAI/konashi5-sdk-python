@@ -183,8 +183,8 @@ class _GPIO(KonashiElementBase._KonashiElementBase):
         Args:
             configs (Sequence[Tuple[int, GPIOPinConfig]]): The list of pin configurations.
                 For each Tuple:
-                    int: A bitmask of the pins to apply the configuration to.
-                    GPIOPinConfig: The configuration for the specified pins.
+                int: A bitmask of the pins to apply the configuration to.
+                GPIOPinConfig: The configuration for the specified pins.
 
         Raises:
             PinUnavailableError: At least one of the specified pins is confgured with a function other than GPIO.
@@ -221,8 +221,8 @@ class _GPIO(KonashiElementBase._KonashiElementBase):
         Args:
             notify_callback (Callable[[int, int], None]): The callback function.
                 The function takes 2 parameters and returns nothing:
-                    int: The pin number.
-                    int: The pin value.
+                int: The pin number.
+                int: The pin value.
         """
         self._input_cb = notify_callback
 
@@ -232,8 +232,8 @@ class _GPIO(KonashiElementBase._KonashiElementBase):
         Args:
             controls (Sequence[Tuple[int, GPIOPinControl]]): A list of pin controls.
                 For each Tuple:
-                    int: A bitmask of the pins to apply the control to.
-                    GPIOPinControl: The control for the specified pins.
+                int: A bitmask of the pins to apply the control to.
+                GPIOPinControl: The control for the specified pins.
 
         Raises:
             PinUnavailableError: At least one pin is not configured as GPIO.

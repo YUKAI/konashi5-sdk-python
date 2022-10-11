@@ -54,7 +54,7 @@ class _RGBLed(KonashiElementBase._KonashiElementBase):
             duration (int): The time to transition to the new color in milliseconds (valid range is [0,65535], the value is truncated if out of range).
             callback (Callable[[Tuple[int,int,int,int]], None], optional): The callback. Defaults to None.
                 The function takes 1 parameter and returns nothing:
-                    Tuple[int,int,int,int]: The current LED color in the form (red,green,blue,alpha).
+                Tuple[int,int,int,int]: The current LED color in the form (red,green,blue,alpha).
         """
         b = bytearray([r&0xFF, g&0xFF, b&0xFF, a&0xFF, (duration&0x00FF), ((duration&0xFF00)>>8)])
         await self._write(KONASHI_UUID_BUILTIN_RGB_SET, b)

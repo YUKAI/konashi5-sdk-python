@@ -265,8 +265,8 @@ class _AIO(KonashiElementBase._KonashiElementBase):
         Args:
             configs (Sequence[Tuple[int, AIOPinConfig]]): The list of pin configurations.
                 For each Tuple:
-                    int: A bitmask of the pins to apply the configuration to.
-                    AIOPinConfig: The configuration for the specified pins.
+                int: A bitmask of the pins to apply the configuration to.
+                AIOPinConfig: The configuration for the specified pins.
         """
         b = bytearray([KONASHI_CFG_CMD_ANALOG])
         for config in configs:
@@ -297,8 +297,8 @@ class _AIO(KonashiElementBase._KonashiElementBase):
         Args:
             notify_callback (Callable[[int, int], None]): The callback function.
                 The function takes 2 parameters and returns nothing:
-                    int: The input pin number.
-                    int: The pin input value.
+                int: The input pin number.
+                int: The pin input value.
         """
         self._input_cb = notify_callback
 
@@ -308,8 +308,8 @@ class _AIO(KonashiElementBase._KonashiElementBase):
         Args:
             controls (Sequence[Tuple[int, AIOPinControl]]): The list of pin controls.
                 For each Tuple:
-                    int: A bitmask of the pins to apply the control to.
-                    AIOPinControl: The control for the specified pins.
+                int: A bitmask of the pins to apply the control to.
+                AIOPinControl: The control for the specified pins.
         """
         b = bytearray([KONASHI_CTL_CMD_ANALOG])
         for control in controls:

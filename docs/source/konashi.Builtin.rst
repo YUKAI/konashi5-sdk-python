@@ -11,6 +11,7 @@ konashi.Builtin.AccelGyro module
    :members:
    :undoc-members:
    :show-inheritance:
+   :private-members:
 
 konashi.Builtin.Humidity module
 -------------------------------
@@ -19,6 +20,7 @@ konashi.Builtin.Humidity module
    :members:
    :undoc-members:
    :show-inheritance:
+   :private-members:
 
 konashi.Builtin.Presence module
 -------------------------------
@@ -27,6 +29,7 @@ konashi.Builtin.Presence module
    :members:
    :undoc-members:
    :show-inheritance:
+   :private-members:
 
 konashi.Builtin.Pressure module
 -------------------------------
@@ -35,6 +38,7 @@ konashi.Builtin.Pressure module
    :members:
    :undoc-members:
    :show-inheritance:
+   :private-members:
 
 konashi.Builtin.RGBLed module
 -----------------------------
@@ -43,6 +47,7 @@ konashi.Builtin.RGBLed module
    :members:
    :undoc-members:
    :show-inheritance:
+   :private-members:
 
 konashi.Builtin.Temperature module
 ----------------------------------
@@ -51,6 +56,7 @@ konashi.Builtin.Temperature module
    :members:
    :undoc-members:
    :show-inheritance:
+   :private-members:
 
 Module contents
 ---------------
@@ -59,3 +65,4 @@ Module contents
    :members:
    :undoc-members:
    :show-inheritance:
+   :private-members:

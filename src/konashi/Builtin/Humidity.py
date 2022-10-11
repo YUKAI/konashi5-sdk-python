@@ -47,7 +47,7 @@ class _Humidity(KonashiElementBase._KonashiElementBase):
         Args:
             notify_callback (Callable[[float], None]): The callback.
                 The function takes 1 parameter and return nothing:
-                    float: The humidity in %.
+                float: The humidity in %.
         """
         if notify_callback is not None:
             self._cb = notify_callback

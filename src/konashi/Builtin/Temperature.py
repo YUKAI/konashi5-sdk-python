@@ -47,7 +47,7 @@ class _Temperature(KonashiElementBase._KonashiElementBase):
         Args:
             notify_callback (Callable[[float], None]): The callback.
                 The function takes 1 parameter and returns nothing:
-                    float: The temperature in degrees Celsius.
+                float: The temperature in degrees Celsius.
         """
         if notify_callback is not None:
             self._cb = notify_callback

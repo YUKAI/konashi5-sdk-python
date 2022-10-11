@@ -51,8 +51,8 @@ class _AccelGyro(KonashiElementBase._KonashiElementBase):
         Args:
             notify_callback (Callable[[Tuple[float,float,float],Tuple[float,float,float]], None]): The callback.
                 The function take 2 parameters and returns nothing:
-                    Tuple[float,float,float]: The acceleration in g (9.8 m/s^2).
-                    Tuple[float,float,float]: The angular speed in degree/s.
+                Tuple[float,float,float]: The acceleration in g (9.8 m/s^2).
+                Tuple[float,float,float]: The angular speed in degree/s.
         """
         if notify_callback is not None:
             self._cb = notify_callback
