@@ -24,5 +24,6 @@ dependencies = [
 ]
 
 [project.urls]
-repository = "https://github.com/YUKAI/konashi5-sdk-python"
-bug-tracker = "https://github.com/YUKAI/konashi5-sdk-python/issues"
+"Repository" = "https://github.com/YUKAI/konashi5-sdk-python"
+"Bug Tracker" = "https://github.com/YUKAI/konashi5-sdk-python/issues"
+"Documentation" = "https://konashi5-sdk-python.readthedocs.io"
