@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 
 from asyncio.exceptions import CancelledError
-from konashi import *
+from konashi import Konashi, KonashiScanner
 import konashi
-from konashi.Io import GPIO as KonashiGpio
 import logging
 import asyncio
 import argparse
@@ -33,8 +32,8 @@ async def main(device):
         # GPIO0: enable, input, notify on change, pull-down off, pull-up off, wired function off
         # GPIO1~4: enable, output, pull-down off, pull-up off, wired function off
         await device.io.gpio.config_pins([
-            (0x01, KonashiGpio.GPIOPinConfig(KonashiGpio.GPIOPinDirection.INPUT, KonashiGpio.GPIOPinPull.NONE, True)),
-            (0x1e, KonashiGpio.GPIOPinConfig(KonashiGpio.GPIOPinDirection.OUTPUT, KonashiGpio.GPIOPinPull.NONE, False))
+            (0x01, konashi.GPIOPinConfig(konashi.GPIOPinDirection.INPUT, konashi.GPIOPinPull.NONE, True)),
+            (0x1e, konashi.GPIOPinConfig(konashi.GPIOPinDirection.OUTPUT, konashi.GPIOPinPull.NONE, False))
         ])
 
         cnt = 0
@@ -42,8 +41,8 @@ async def main(device):
             on_pin_mask = cnt<<1
             off_pin_mask = ((~cnt)&0xF)<<1
             await device.io.gpio.control_pins([
-                (on_pin_mask, KonashiGpio.GPIOPinControl.HIGH),
-                (off_pin_mask, KonashiGpio.GPIOPinControl.LOW)
+                (on_pin_mask, konashi.GPIOPinControl.HIGH),
+                (off_pin_mask, konashi.GPIOPinControl.LOW)
             ])
             cnt += 1
             cnt %= 16
