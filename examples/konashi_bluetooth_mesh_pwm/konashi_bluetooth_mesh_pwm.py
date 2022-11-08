@@ -1,12 +1,7 @@
 #!/usr/bin/env python3
 
-from asyncio.exceptions import CancelledError
-from konashi import *
+from konashi import Konashi, KonashiScanner
 import konashi
-from konashi.Settings import System as KonashiSystem
-from konashi.Settings import Bluetooth as KonashiBluetooth
-from konashi.Io import SoftPWM as KonashiSPWM
-from konashi.Io import HardPWM as KonashiHPWM
 import logging
 import asyncio
 import argparse
@@ -30,14 +25,14 @@ async def main(device):
             return
         logging.info("Connected to device")
         await device.settings.system.set_nvm_use(True)
-        await device.settings.system.set_nvm_save_trigger(KonashiSystem.NvmSaveTrigger.AUTO)
-        await device.settings.bluetooth.enable_function(KonashiBluetooth.Function.MESH, True)
+        await device.settings.system.set_nvm_save_trigger(konashi.SystemSettingsNvmSaveTrigger.AUTO)
+        await device.settings.bluetooth.enable_function(konashi.BluetoothSettingsFunction.MESH, True)
         # HardPWM clock settings: 10ms period
         await device.io.hardpwm.config_pwm(0.01)
         # HardPWM1~3: enable
         await device.io.hardpwm.config_pins([(0xe, True)])
         # SoftPWM0: period control, fixed duty 50%
-        await device.io.softpwm.config_pins([(0x1, KonashiSPWM.PinConfig(KonashiSPWM.ControlType.PERIOD, 500))])
+        await device.io.softpwm.config_pins([(0x1, konashi.SoftPWMPinConfig(konashi.SoftPWMControlType.PERIOD, 500))])
     except (asyncio.CancelledError, KeyboardInterrupt):
         logging.info("Stop loop")
     finally:

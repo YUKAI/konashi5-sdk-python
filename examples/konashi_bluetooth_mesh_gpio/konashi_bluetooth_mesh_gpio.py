@@ -1,11 +1,7 @@
 #!/usr/bin/env python3
 
-from asyncio.exceptions import CancelledError
-from konashi import *
+from konashi import Konashi, KonashiScanner
 import konashi
-from konashi.Settings import System as KonashiSystem
-from konashi.Settings import Bluetooth as KonashiBluetooth
-from konashi.Io import Gpio as KonashiGpio
 import logging
 import asyncio
 import argparse
@@ -29,13 +25,13 @@ async def main(device):
             return
         logging.info("Connected to device")
         await device.settings.system.set_nvm_use(True)
-        await device.settings.system.set_nvm_save_trigger(KonashiSystem.NvmSaveTrigger.AUTO)
-        await device.settings.bluetooth.enable_function(KonashiBluetooth.Function.MESH, True)
+        await device.settings.system.set_nvm_save_trigger(konashi.SystemSettingsNvmSaveTrigger.AUTO)
+        await device.settings.bluetooth.enable_function(konashi.BluetoothSettingsFunction.MESH, True)
         # GPIO0: enable, input, no notify on change, pull-down off, pull-up off, wired function off
         # GPIO1~4: enable, output, pull-down off, pull-up off, wired function off
         await device.io.gpio.config_pins([
-            (0x01, KonashiGpio.PinConfig(KonashiGpio.PinDirection.INPUT, KonashiGpio.PinPull.NONE, False)),
-            (0x1e, KonashiGpio.PinConfig(KonashiGpio.PinDirection.OUTPUT, KonashiGpio.PinPull.NONE, False))
+            (0x01, konashi.GPIOPinConfig(konashi.GPIOPinDirection.INPUT, konashi.GPIOPinPull.NONE, False)),
+            (0x1e, konashi.GPIOPinConfig(konashi.GPIOPinDirection.OUTPUT, konashi.GPIOPinPull.NONE, False))
         ])
     except (asyncio.CancelledError, KeyboardInterrupt):
         logging.info("Stop loop")
